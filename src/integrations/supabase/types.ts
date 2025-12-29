@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      event_proposals: {
+        Row: {
+          city: string
+          created_at: string
+          email: string
+          event_concept: string
+          fee_model: string
+          id: string
+          instagram_handle: string | null
+          name: string
+          preferred_date: string
+          profit_summary: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          email: string
+          event_concept: string
+          fee_model: string
+          id?: string
+          instagram_handle?: string | null
+          name: string
+          preferred_date: string
+          profit_summary?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          email?: string
+          event_concept?: string
+          fee_model?: string
+          id?: string
+          instagram_handle?: string | null
+          name?: string
+          preferred_date?: string
+          profit_summary?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
