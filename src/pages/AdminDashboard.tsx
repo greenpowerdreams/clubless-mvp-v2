@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Zap,
   Calendar,
@@ -28,6 +29,8 @@ import {
   Ticket,
   Wine,
   Building2,
+  ExternalLink,
+  Globe,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +58,8 @@ interface Proposal {
   profit_summary: ProfitSummary | null;
   status: string;
   created_at: string;
+  eventbrite_url: string | null;
+  eventbrite_status: string | null;
 }
 
 type SortField = "created_at" | "preferred_date" | "city" | "profit";
@@ -71,6 +76,8 @@ export default function AdminDashboard() {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [eventbriteUrlInput, setEventbriteUrlInput] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -84,6 +91,11 @@ export default function AdminDashboard() {
       fetchProposals();
     }
   }, [isAdmin]);
+
+  // Sync eventbrite URL input when switching proposals
+  useEffect(() => {
+    setEventbriteUrlInput(selectedProposal?.eventbrite_url || "");
+  }, [selectedProposal?.id]);
 
   const fetchProposals = async () => {
     try {
@@ -169,6 +181,56 @@ export default function AdminDashboard() {
         description: "Failed to update proposal status",
         variant: "destructive",
       });
+    }
+  };
+
+  const markAsPublished = async () => {
+    if (!selectedProposal || !eventbriteUrlInput.trim()) {
+      toast({
+        title: "URL Required",
+        description: "Please enter the Eventbrite URL first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      const { error } = await supabase
+        .from("event_proposals")
+        .update({ 
+          eventbrite_url: eventbriteUrlInput.trim(),
+          eventbrite_status: 'published'
+        })
+        .eq("id", selectedProposal.id);
+
+      if (error) throw error;
+
+      setProposals((prev) =>
+        prev.map((p) => 
+          p.id === selectedProposal.id 
+            ? { ...p, eventbrite_url: eventbriteUrlInput.trim(), eventbrite_status: 'published' } 
+            : p
+        )
+      );
+      
+      setSelectedProposal((prev) => 
+        prev ? { ...prev, eventbrite_url: eventbriteUrlInput.trim(), eventbrite_status: 'published' } : null
+      );
+
+      toast({
+        title: "Marked as Published",
+        description: "The Eventbrite URL has been saved.",
+      });
+    } catch (error) {
+      console.error("Error marking as published:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save Eventbrite URL",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -558,6 +620,63 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Eventbrite Section - Only for approved proposals */}
+                  {selectedProposal.status === "approved" && (
+                    <div className="mb-8">
+                      <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
+                        <Globe className="w-5 h-5 text-primary" />
+                        Eventbrite Publishing
+                      </h3>
+                      
+                      {selectedProposal.eventbrite_status === 'published' && selectedProposal.eventbrite_url ? (
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-green-400 mb-1">Published on Eventbrite</p>
+                              <p className="text-xs text-muted-foreground truncate max-w-md">
+                                {selectedProposal.eventbrite_url}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                              onClick={() => window.open(selectedProposal.eventbrite_url!, '_blank')}
+                            >
+                              <ExternalLink className="w-4 h-4 mr-1" />
+                              Open on Eventbrite
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            Enter the Eventbrite URL after creating the event manually.
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="https://eventbrite.com/e/your-event..."
+                              value={eventbriteUrlInput}
+                              onChange={(e) => setEventbriteUrlInput(e.target.value)}
+                              className="flex-1"
+                            />
+                            <Button
+                              onClick={markAsPublished}
+                              disabled={isPublishing || !eventbriteUrlInput.trim()}
+                            >
+                              {isPublishing ? (
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                              )}
+                              Mark as Published
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
