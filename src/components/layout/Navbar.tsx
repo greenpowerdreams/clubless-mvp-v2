@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Shield } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -48,13 +48,7 @@ export function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin" className="flex items-center gap-1.5">
-                <Shield className="w-4 h-4" />
-                Admin
-              </Link>
-            </Button>
+          <div className="hidden md:block">
             <Button variant="gradient" size="sm" asChild>
               <Link to="/submit">Join The Collective</Link>
             </Button>
@@ -88,12 +82,6 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <Button variant="outline" className="mt-2" asChild>
-                <Link to="/admin" onClick={() => setIsOpen(false)} className="flex items-center gap-1.5">
-                  <Shield className="w-4 h-4" />
-                  Admin
-                </Link>
-              </Button>
               <Button variant="gradient" className="mt-2" asChild>
                 <Link to="/submit" onClick={() => setIsOpen(false)}>
                   Join The Collective
