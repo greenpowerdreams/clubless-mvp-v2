@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Bebas Neue', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -52,9 +52,10 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         neon: {
-          cyan: "hsl(var(--neon-cyan))",
-          magenta: "hsl(var(--neon-magenta))",
-          yellow: "hsl(var(--neon-yellow))",
+          violet: "hsl(var(--neon-violet))",
+          pink: "hsl(var(--neon-pink))",
+          gold: "hsl(var(--neon-gold))",
+          blue: "hsl(var(--neon-blue))",
           green: "hsl(var(--neon-green))",
         },
         sidebar: {
