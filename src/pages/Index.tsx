@@ -163,16 +163,16 @@ export default function Index() {
         <div className="container px-4 relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {[
-              { value: "$12K+", label: "Avg. Event Profit", color: "text-primary" },
-              { value: "150+", label: "Events Hosted", color: "text-secondary" },
-              { value: "85%", label: "Revenue to You", color: "text-accent" },
-              { value: "48hrs", label: "Event Approval", color: "text-primary" },
+              { value: "$12K+", label: "Avg. Event Profit", color: "text-primary", highlight: false },
+              { value: "150+", label: "Events Hosted", color: "text-secondary", highlight: true },
+              { value: "85%", label: "Revenue to You", color: "text-accent", highlight: false },
+              { value: "48hrs", label: "Event Approval", color: "text-primary", highlight: false },
             ].map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className={`font-display text-3xl md:text-5xl font-bold ${stat.color} mb-2`}>
+              <div key={index} className={`text-center p-4 rounded-xl transition-all ${stat.highlight ? 'bg-secondary/20 border border-secondary/40 scale-105' : ''}`}>
+                <div className={`font-display text-3xl md:text-5xl font-bold ${stat.color} mb-2 ${stat.highlight ? 'drop-shadow-[0_0_15px_hsl(var(--secondary)/0.6)]' : ''}`}>
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <div className={`text-sm ${stat.highlight ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>{stat.label}</div>
               </div>
             ))}
           </div>
