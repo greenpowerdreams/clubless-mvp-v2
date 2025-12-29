@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import HowItWorks from "./pages/HowItWorks";
 import Calculator from "./pages/Calculator";
 import SubmitEvent from "./pages/SubmitEvent";
+import ProposalStatus from "./pages/ProposalStatus";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAuth from "./pages/AdminAuth";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/submit" element={<SubmitEvent />} />
+          <Route path="/status" element={<ProposalStatus />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/login" element={<AdminAuth />} />
           <Route path="*" element={<NotFound />} />

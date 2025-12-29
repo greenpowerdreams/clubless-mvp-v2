@@ -88,41 +88,21 @@ export type Database = {
       }
     }
     Views: {
-      proposal_status: {
-        Row: {
-          city: string | null
-          created_at: string | null
-          email: string | null
-          eventbrite_status: string | null
-          eventbrite_url: string | null
-          id: string | null
-          preferred_date: string | null
-          status: string | null
-        }
-        Insert: {
-          city?: string | null
-          created_at?: string | null
-          email?: string | null
-          eventbrite_status?: string | null
-          eventbrite_url?: string | null
-          id?: string | null
-          preferred_date?: string | null
-          status?: string | null
-        }
-        Update: {
-          city?: string | null
-          created_at?: string | null
-          email?: string | null
-          eventbrite_status?: string | null
-          eventbrite_url?: string | null
-          id?: string | null
-          preferred_date?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_proposal_status: {
+        Args: { lookup_email: string }
+        Returns: {
+          city: string
+          created_at: string
+          eventbrite_status: string
+          eventbrite_url: string
+          id: string
+          preferred_date: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
