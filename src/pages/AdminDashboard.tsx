@@ -1,23 +1,37 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Zap,
   Calendar,
   Users,
   MapPin,
   Mail,
-  ExternalLink,
   Clock,
   CheckCircle,
   XCircle,
   Instagram,
   DollarSign,
   Loader2,
+  Download,
+  ArrowUpDown,
+  LogOut,
+  TrendingUp,
+  Ticket,
+  Wine,
+  Building2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface ProfitSummary {
   attendance?: number;
@@ -43,15 +57,33 @@ interface Proposal {
   created_at: string;
 }
 
+type SortField = "created_at" | "preferred_date" | "city" | "profit";
+type SortDirection = "asc" | "desc";
+
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAdmin, isLoading: authLoading, signOut } = useAdminAuth();
+  
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      navigate("/admin/login");
+    }
+  }, [authLoading, user, isAdmin, navigate]);
 
   useEffect(() => {
-    fetchProposals();
-  }, []);
+    if (isAdmin) {
+      fetchProposals();
+    }
+  }, [isAdmin]);
 
   const fetchProposals = async () => {
     try {
@@ -62,7 +94,6 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       
-      // Type assertion since we know the structure matches
       setProposals((data || []) as unknown as Proposal[]);
     } catch (error) {
       console.error("Error fetching proposals:", error);
@@ -75,6 +106,40 @@ export default function AdminDashboard() {
       setIsLoading(false);
     }
   };
+
+  // Sorted and filtered proposals
+  const sortedProposals = useMemo(() => {
+    let filtered = proposals;
+    
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = proposals.filter(p => p.status === statusFilter);
+    }
+
+    // Apply sorting
+    return [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case "created_at":
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case "preferred_date":
+          comparison = new Date(a.preferred_date).getTime() - new Date(b.preferred_date).getTime();
+          break;
+        case "city":
+          comparison = a.city.localeCompare(b.city);
+          break;
+        case "profit":
+          const profitA = a.profit_summary?.yourTakeHome || 0;
+          const profitB = b.profit_summary?.yourTakeHome || 0;
+          comparison = profitA - profitB;
+          break;
+      }
+      
+      return sortDirection === "desc" ? -comparison : comparison;
+    });
+  }, [proposals, sortField, sortDirection, statusFilter]);
 
   const updateStatus = async (id: string, status: "approved" | "rejected") => {
     try {
@@ -107,6 +172,56 @@ export default function AdminDashboard() {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = [
+      "Name",
+      "Email",
+      "Instagram",
+      "City",
+      "Preferred Date",
+      "Fee Model",
+      "Status",
+      "Attendance",
+      "Total Revenue",
+      "Total Costs",
+      "Projected Profit",
+      "Event Concept",
+      "Submitted At",
+    ];
+
+    const rows = sortedProposals.map((p) => [
+      p.name,
+      p.email,
+      p.instagram_handle || "",
+      p.city,
+      p.preferred_date,
+      p.fee_model,
+      p.status,
+      p.profit_summary?.attendance || "",
+      p.profit_summary?.totalRevenue || "",
+      p.profit_summary?.totalCosts || "",
+      p.profit_summary?.yourTakeHome || "",
+      `"${p.event_concept.replace(/"/g, '""')}"`,
+      p.created_at,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `clubless-proposals-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+
+    toast({
+      title: "Export Complete",
+      description: `Exported ${sortedProposals.length} proposals to CSV`,
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
@@ -131,7 +246,7 @@ export default function AdminDashboard() {
     return model === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)";
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -142,7 +257,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="glass-strong border-b border-border">
+      <header className="glass-strong border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
@@ -150,45 +265,99 @@ export default function AdminDashboard() {
             </div>
             <span className="font-display font-bold text-lg">Clubless Admin</span>
           </Link>
-          <Badge variant="outline">Admin Panel</Badge>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground hidden sm:block">
+              {user?.email}
+            </span>
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold mb-2">
-            Event Proposals
-          </h1>
-          <p className="text-muted-foreground">
-            Review and manage incoming event proposals.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold mb-2">
+              Event Proposals
+            </h1>
+            <p className="text-muted-foreground">
+              Review and manage incoming event proposals.
+            </p>
+          </div>
+          
+          <Button onClick={exportToCSV} variant="outline" disabled={sortedProposals.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
 
-        {proposals.length === 0 ? (
+        {/* Filters & Sort */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Submit Date</SelectItem>
+                <SelectItem value="preferred_date">Event Date</SelectItem>
+                <SelectItem value="city">City</SelectItem>
+                <SelectItem value="profit">Projected Profit</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSortDirection(d => d === "asc" ? "desc" : "asc")}
+            >
+              <ArrowUpDown className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Status:</span>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="text-sm text-muted-foreground ml-auto">
+            {sortedProposals.length} proposal{sortedProposals.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+
+        {sortedProposals.length === 0 ? (
           <div className="glass rounded-2xl p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
               <Clock className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="font-display text-xl font-semibold mb-2">
-              No Proposals Yet
+              No Proposals Found
             </h3>
             <p className="text-muted-foreground">
-              Event proposals will appear here when submitted.
+              {statusFilter !== "all" 
+                ? `No ${statusFilter} proposals yet.`
+                : "Event proposals will appear here when submitted."}
             </p>
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Proposals List */}
             <div className="lg:col-span-1 space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold">All Proposals</h2>
-                <span className="text-sm text-muted-foreground">
-                  {proposals.length} total
-                </span>
-              </div>
-
-              <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
-                {proposals.map((proposal) => (
+              <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
+                {sortedProposals.map((proposal) => (
                   <button
                     key={proposal.id}
                     onClick={() => setSelectedProposal(proposal)}
@@ -210,10 +379,10 @@ export default function AdminDashboard() {
                         <Calendar className="w-3 h-3" />
                         {new Date(proposal.preferred_date).toLocaleDateString()}
                       </span>
-                      {proposal.profit_summary?.attendance && (
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {proposal.profit_summary.attendance}
+                      {proposal.profit_summary?.yourTakeHome && (
+                        <span className="flex items-center gap-1 text-primary">
+                          <DollarSign className="w-3 h-3" />
+                          {formatCurrency(proposal.profit_summary.yourTakeHome)}
                         </span>
                       )}
                     </div>
@@ -309,38 +478,84 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Profit Summary */}
+                  {/* Full Calculator Breakdown */}
                   {selectedProposal.profit_summary && (
                     <div className="mb-8">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                        Profit Projection from Calculator
+                      <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                        Full Calculator Breakdown
                       </h3>
-                      <div className="bg-gradient-primary/10 border border-primary/20 rounded-xl p-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                          {selectedProposal.profit_summary.attendance && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">Attendance</p>
-                              <p className="font-semibold">{selectedProposal.profit_summary.attendance}</p>
-                            </div>
-                          )}
-                          {selectedProposal.profit_summary.totalRevenue && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">Total Revenue</p>
-                              <p className="font-semibold">{formatCurrency(selectedProposal.profit_summary.totalRevenue)}</p>
-                            </div>
-                          )}
-                          {selectedProposal.profit_summary.totalCosts && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">Total Costs</p>
-                              <p className="font-semibold">{formatCurrency(selectedProposal.profit_summary.totalCosts)}</p>
-                            </div>
-                          )}
-                          {selectedProposal.profit_summary.yourTakeHome && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">Their Take-Home</p>
-                              <p className="font-semibold text-primary">{formatCurrency(selectedProposal.profit_summary.yourTakeHome)}</p>
-                            </div>
-                          )}
+                      
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {/* Revenue */}
+                        <div className="bg-secondary/50 rounded-xl p-4">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-3">Revenue</h4>
+                          <div className="space-y-2">
+                            {selectedProposal.profit_summary.attendance && (
+                              <div className="flex justify-between text-sm">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                  <Users className="w-4 h-4" /> Attendance
+                                </span>
+                                <span className="font-medium">{selectedProposal.profit_summary.attendance}</span>
+                              </div>
+                            )}
+                            {selectedProposal.profit_summary.ticketPrice && (
+                              <div className="flex justify-between text-sm">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                  <Ticket className="w-4 h-4" /> Ticket Price
+                                </span>
+                                <span className="font-medium">{formatCurrency(selectedProposal.profit_summary.ticketPrice)}</span>
+                              </div>
+                            )}
+                            {selectedProposal.profit_summary.totalRevenue && (
+                              <div className="flex justify-between text-sm pt-2 border-t border-border/50">
+                                <span className="font-medium">Total Revenue</span>
+                                <span className="font-bold text-primary">
+                                  {formatCurrency(selectedProposal.profit_summary.totalRevenue)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Costs */}
+                        <div className="bg-secondary/50 rounded-xl p-4">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-3">Costs</h4>
+                          <div className="space-y-2">
+                            {selectedProposal.profit_summary.totalCosts && (
+                              <div className="flex justify-between text-sm">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                  <Building2 className="w-4 h-4" /> Total Costs
+                                </span>
+                                <span className="font-medium text-destructive">
+                                  -{formatCurrency(selectedProposal.profit_summary.totalCosts)}
+                                </span>
+                              </div>
+                            )}
+                            {selectedProposal.profit_summary.netProfit && (
+                              <div className="flex justify-between text-sm pt-2 border-t border-border/50">
+                                <span className="font-medium">Net Profit</span>
+                                <span className="font-bold">
+                                  {formatCurrency(selectedProposal.profit_summary.netProfit)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Final Take-Home */}
+                      <div className="mt-4 bg-gradient-primary/10 border border-primary/20 rounded-xl p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Organizer Take-Home</p>
+                            <p className="text-xs text-muted-foreground">
+                              After {selectedProposal.profit_summary.feeModel === "profit-share" ? "50/50" : "15%"} Clubless fee
+                            </p>
+                          </div>
+                          <p className="text-3xl font-display font-bold text-gradient">
+                            {formatCurrency(selectedProposal.profit_summary.yourTakeHome || 0)}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -351,7 +566,7 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-medium text-muted-foreground mb-2">
                       Event Concept
                     </h3>
-                    <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                    <p className="text-foreground leading-relaxed whitespace-pre-wrap bg-secondary/30 rounded-xl p-4">
                       {selectedProposal.event_concept}
                     </p>
                   </div>

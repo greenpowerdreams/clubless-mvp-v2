@@ -8,6 +8,7 @@ import HowItWorks from "./pages/HowItWorks";
 import Calculator from "./pages/Calculator";
 import SubmitEvent from "./pages/SubmitEvent";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAuth from "./pages/AdminAuth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/submit" element={<SubmitEvent />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/login" element={<AdminAuth />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
