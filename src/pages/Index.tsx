@@ -43,9 +43,11 @@ export default function Index() {
             </div>
 
             <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 animate-slide-up leading-tight">
-              Mobile Bar, Catering{" "}
-              <span className="text-gradient-brand">&amp; Events</span>
+              <span className="text-gradient-brand">Clubless Collective</span>
             </h1>
+            <p className="text-xl md:text-2xl font-semibold text-foreground/90 mb-2 animate-slide-up" style={{ animationDelay: "0.05s" }}>
+              Mobile Bar, Catering & Events
+            </p>
 
             <p className="text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: "0.1s" }}>
               We handle the venue, bar, catering, staffing, and logistics—so you 
