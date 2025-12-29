@@ -168,11 +168,16 @@ export default function Index() {
               { value: "85%", label: "Revenue to You", color: "text-accent", highlight: false },
               { value: "48hrs", label: "Event Approval", color: "text-primary", highlight: false },
             ].map((stat, index) => (
-              <div key={index} className={`text-center p-4 rounded-xl transition-all ${stat.highlight ? 'bg-secondary/20 border border-secondary/40 scale-105' : ''}`}>
-                <div className={`font-display text-3xl md:text-5xl font-bold ${stat.color} mb-2 ${stat.highlight ? 'drop-shadow-[0_0_15px_hsl(var(--secondary)/0.6)]' : ''}`}>
+              <div key={index} className={`text-center p-6 rounded-2xl transition-all ${stat.highlight ? 'bg-gradient-to-br from-secondary/30 to-secondary/10 border-2 border-secondary shadow-[0_0_30px_hsl(var(--secondary)/0.4)] scale-110 relative' : ''}`}>
+                {stat.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
+                    ★ MILESTONE
+                  </div>
+                )}
+                <div className={`font-display text-3xl md:text-5xl font-bold mb-2 ${stat.highlight ? 'text-secondary drop-shadow-[0_0_20px_hsl(var(--secondary)/0.8)] animate-pulse' : stat.color}`}>
                   {stat.value}
                 </div>
-                <div className={`text-sm ${stat.highlight ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>{stat.label}</div>
+                <div className={`text-sm ${stat.highlight ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>{stat.label}</div>
               </div>
             ))}
           </div>
