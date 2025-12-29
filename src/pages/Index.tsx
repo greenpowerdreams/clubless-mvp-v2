@@ -12,6 +12,7 @@ import {
   Music,
   Wine,
   MapPin,
+  Zap,
 } from "lucide-react";
 import heroImage from "@/assets/hero-party.jpg";
 
@@ -64,18 +65,18 @@ export default function Index() {
             </div>
 
             {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="w-4 h-4 text-accent" />
-                <span className="text-sm">Seattle</span>
+            <div className="flex flex-wrap items-center justify-center gap-8 mt-12 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-accent" />
+                <span className="text-sm font-semibold text-foreground">Seattle</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Music className="w-4 h-4 text-secondary" />
-                <span className="text-sm">150+ Events</span>
+              <div className="flex items-center gap-2">
+                <Music className="w-5 h-5 text-primary" />
+                <span className="text-sm font-bold text-foreground">150+ Events</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Wine className="w-4 h-4 text-primary" />
-                <span className="text-sm">Licensed & Insured</span>
+              <div className="flex items-center gap-2">
+                <Wine className="w-5 h-5 text-neon-gold" />
+                <span className="text-sm font-semibold text-foreground">Licensed & Insured</span>
               </div>
             </div>
           </div>
