@@ -88,7 +88,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      proposal_status: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          email: string | null
+          eventbrite_status: string | null
+          eventbrite_url: string | null
+          id: string | null
+          preferred_date: string | null
+          status: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          eventbrite_status?: string | null
+          eventbrite_url?: string | null
+          id?: string | null
+          preferred_date?: string | null
+          status?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          eventbrite_status?: string | null
+          eventbrite_url?: string | null
+          id?: string | null
+          preferred_date?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
