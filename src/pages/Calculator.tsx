@@ -450,7 +450,20 @@ export default function Calculator() {
 
               {/* CTA */}
               <Button variant="gradient" size="lg" className="w-full" asChild>
-                <Link to="/submit">
+                <Link 
+                  to="/submit" 
+                  state={{ 
+                    calculatorData: {
+                      attendance,
+                      ticketPrice,
+                      totalRevenue: calculations.totalRevenue,
+                      totalCosts: calculations.totalCosts,
+                      netProfit: calculations.netEventProfit,
+                      yourTakeHome: calculations.yourTakeHome,
+                      feeModel: isProfitShare ? "profit-share" : "service-fee",
+                    }
+                  }}
+                >
                   Submit This Event to Clubless
                   <ArrowRight className="w-5 h-5" />
                 </Link>
