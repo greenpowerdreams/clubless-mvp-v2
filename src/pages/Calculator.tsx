@@ -7,32 +7,126 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   ArrowRight,
   Users,
   Ticket,
   Wine,
   Building2,
-  UserCog,
   Wrench,
   TrendingUp,
   DollarSign,
   PieChart,
   AlertCircle,
   Sparkles,
+  ShieldCheck,
+  GlassWater,
+  DoorOpen,
+  HardHat,
+  Lock,
 } from "lucide-react";
 
+// Locked rates (non-editable)
+const BARTENDER_RATE = 40;
+const SECURITY_RATE = 25;
+
 export default function Calculator() {
-  // User inputs
+  // User inputs - Revenue
   const [attendance, setAttendance] = useState(200);
   const [ticketPrice, setTicketPrice] = useState(25);
   const [drinksPerAttendee, setDrinksPerAttendee] = useState(3);
   const [drinkPrice, setDrinkPrice] = useState(12);
+  
+  // Base costs
   const [venueCost, setVenueCost] = useState(2000);
-  const [staffingCost, setStaffingCost] = useState(1500);
   const [equipmentCost, setEquipmentCost] = useState(500);
   
-  // Fee model toggle: false = Service Fee (15%), true = Profit Share (50/50)
+  // Staffing toggles and inputs
+  const [includeBartending, setIncludeBartending] = useState(true);
+  const [numBartenders, setNumBartenders] = useState(2);
+  const [bartenderHours, setBartenderHours] = useState(6);
+  
+  const [includeSecurity, setIncludeSecurity] = useState(true);
+  const [numSecurity, setNumSecurity] = useState(2);
+  const [securityHours, setSecurityHours] = useState(6);
+  
+  const [includeDoorStaff, setIncludeDoorStaff] = useState(false);
+  const [numDoorStaff, setNumDoorStaff] = useState(1);
+  const [doorStaffHours, setDoorStaffHours] = useState(5);
+  const [doorStaffRate, setDoorStaffRate] = useState(25);
+  
+  const [includeSetupCrew, setIncludeSetupCrew] = useState(false);
+  const [numSetupCrew, setNumSetupCrew] = useState(2);
+  const [setupCrewHours, setSetupCrewHours] = useState(3);
+  const [setupCrewRate, setSetupCrewRate] = useState(30);
+  
+  // Fee model toggle
   const [isProfitShare, setIsProfitShare] = useState(false);
+
+  // Staffing calculations
+  const staffingBreakdown = useMemo(() => {
+    const items = [];
+    
+    if (includeBartending) {
+      items.push({
+        name: "Bartending",
+        qty: numBartenders,
+        hours: bartenderHours,
+        rate: BARTENDER_RATE,
+        subtotal: numBartenders * bartenderHours * BARTENDER_RATE,
+        locked: true,
+      });
+    }
+    
+    if (includeSecurity) {
+      items.push({
+        name: "Security",
+        qty: numSecurity,
+        hours: securityHours,
+        rate: SECURITY_RATE,
+        subtotal: numSecurity * securityHours * SECURITY_RATE,
+        locked: true,
+      });
+    }
+    
+    if (includeDoorStaff) {
+      items.push({
+        name: "Door Staff",
+        qty: numDoorStaff,
+        hours: doorStaffHours,
+        rate: doorStaffRate,
+        subtotal: numDoorStaff * doorStaffHours * doorStaffRate,
+        locked: false,
+      });
+    }
+    
+    if (includeSetupCrew) {
+      items.push({
+        name: "Setup/Teardown",
+        qty: numSetupCrew,
+        hours: setupCrewHours,
+        rate: setupCrewRate,
+        subtotal: numSetupCrew * setupCrewHours * setupCrewRate,
+        locked: false,
+      });
+    }
+    
+    const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+    
+    return { items, total };
+  }, [
+    includeBartending, numBartenders, bartenderHours,
+    includeSecurity, numSecurity, securityHours,
+    includeDoorStaff, numDoorStaff, doorStaffHours, doorStaffRate,
+    includeSetupCrew, numSetupCrew, setupCrewHours, setupCrewRate,
+  ]);
 
   const calculations = useMemo(() => {
     // Revenue calculations
@@ -40,22 +134,20 @@ export default function Calculator() {
     const barRevenue = attendance * drinksPerAttendee * drinkPrice;
     const totalRevenue = ticketRevenue + barRevenue;
 
-    // Cost calculations
-    const totalCosts = venueCost + staffingCost + equipmentCost;
+    // Cost calculations (venue + equipment + staffing)
+    const totalCosts = venueCost + equipmentCost + staffingBreakdown.total;
 
     // Net profit before Clubless fee
     const netEventProfit = Math.max(0, totalRevenue - totalCosts);
 
-    // Clubless fee calculation based on model
+    // Clubless fee calculation
     let clublessFee: number;
     let feePercentage: number;
     
     if (isProfitShare) {
-      // 50/50 profit split
       clublessFee = netEventProfit * 0.5;
       feePercentage = 50;
     } else {
-      // 15% service fee
       clublessFee = netEventProfit * 0.15;
       feePercentage = 15;
     }
@@ -77,7 +169,7 @@ export default function Calculator() {
       yourPercentage,
       profitPerGuest,
     };
-  }, [attendance, ticketPrice, drinksPerAttendee, drinkPrice, venueCost, staffingCost, equipmentCost, isProfitShare]);
+  }, [attendance, ticketPrice, drinksPerAttendee, drinkPrice, venueCost, equipmentCost, staffingBreakdown.total, isProfitShare]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -88,7 +180,6 @@ export default function Calculator() {
     }).format(amount);
   };
 
-  // Calculate percentages for the visual bar
   const yourShareWidth = calculations.netEventProfit > 0 
     ? (calculations.yourTakeHome / calculations.netEventProfit) * 100 
     : 0;
@@ -118,7 +209,6 @@ export default function Calculator() {
                 </h2>
                 
                 <div className="space-y-8">
-                  {/* Attendance Slider */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <Label className="text-sm font-medium">Expected Attendance</Label>
@@ -137,7 +227,6 @@ export default function Calculator() {
                     </div>
                   </div>
 
-                  {/* Ticket Price */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <Label className="flex items-center gap-2 text-sm font-medium">
@@ -169,7 +258,6 @@ export default function Calculator() {
                 </h2>
                 
                 <div className="grid sm:grid-cols-2 gap-8">
-                  {/* Drinks per Attendee */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <Label className="text-sm font-medium">Drinks per Guest</Label>
@@ -188,7 +276,6 @@ export default function Calculator() {
                     </div>
                   </div>
 
-                  {/* Drink Price */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <Label className="text-sm font-medium">Avg. Drink Price</Label>
@@ -209,15 +296,14 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Costs */}
+              {/* Base Costs */}
               <div className="glass rounded-2xl p-6 md:p-8">
                 <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-primary" />
-                  Event Costs
+                  Base Costs
                 </h2>
                 
-                <div className="grid sm:grid-cols-3 gap-6">
-                  {/* Venue */}
+                <div className="grid sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="venue" className="flex items-center gap-2 text-sm">
                       <Building2 className="w-4 h-4 text-muted-foreground" />
@@ -235,25 +321,6 @@ export default function Calculator() {
                     </div>
                   </div>
 
-                  {/* Staffing */}
-                  <div className="space-y-2">
-                    <Label htmlFor="staffing" className="flex items-center gap-2 text-sm">
-                      <UserCog className="w-4 h-4 text-muted-foreground" />
-                      Staffing
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                      <Input
-                        id="staffing"
-                        type="number"
-                        value={staffingCost}
-                        onChange={(e) => setStaffingCost(Number(e.target.value) || 0)}
-                        className="pl-7"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Equipment */}
                   <div className="space-y-2">
                     <Label htmlFor="equipment" className="flex items-center gap-2 text-sm">
                       <Wrench className="w-4 h-4 text-muted-foreground" />
@@ -270,6 +337,274 @@ export default function Calculator() {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Staffing & Services - NEW SECTION */}
+              <div className="glass rounded-2xl p-6 md:p-8">
+                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Staffing & Services
+                </h2>
+                
+                <div className="space-y-6">
+                  {/* Bartending - Locked Rate */}
+                  <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <GlassWater className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">Bartending</span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                              <Lock className="w-3 h-3" />
+                              ${BARTENDER_RATE}/hr
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Professional bartenders</p>
+                        </div>
+                      </div>
+                      <Switch checked={includeBartending} onCheckedChange={setIncludeBartending} />
+                    </div>
+                    
+                    {includeBartending && (
+                      <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Number of Bartenders</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={numBartenders}
+                            onChange={(e) => setNumBartenders(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Hours</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={12}
+                            step={0.5}
+                            value={bartenderHours}
+                            onChange={(e) => setBartenderHours(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Security - Locked Rate */}
+                  <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+                          <ShieldCheck className="w-5 h-5 text-accent" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">Security</span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full">
+                              <Lock className="w-3 h-3" />
+                              ${SECURITY_RATE}/hr
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Licensed security personnel</p>
+                        </div>
+                      </div>
+                      <Switch checked={includeSecurity} onCheckedChange={setIncludeSecurity} />
+                    </div>
+                    
+                    {includeSecurity && (
+                      <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Number of Security</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={numSecurity}
+                            onChange={(e) => setNumSecurity(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Hours</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={12}
+                            step={0.5}
+                            value={securityHours}
+                            onChange={(e) => setSecurityHours(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Door Staff - Editable Rate */}
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                          <DoorOpen className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <span className="font-semibold">Door Staff</span>
+                          <p className="text-xs text-muted-foreground">ID check & guest list</p>
+                        </div>
+                      </div>
+                      <Switch checked={includeDoorStaff} onCheckedChange={setIncludeDoorStaff} />
+                    </div>
+                    
+                    {includeDoorStaff && (
+                      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border/50">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Qty</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={numDoorStaff}
+                            onChange={(e) => setNumDoorStaff(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Hours</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={12}
+                            step={0.5}
+                            value={doorStaffHours}
+                            onChange={(e) => setDoorStaffHours(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Rate ($/hr)</Label>
+                          <Input
+                            type="number"
+                            min={15}
+                            max={50}
+                            value={doorStaffRate}
+                            onChange={(e) => setDoorStaffRate(Number(e.target.value) || 25)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Setup/Teardown Crew - Editable Rate */}
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                          <HardHat className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <span className="font-semibold">Setup/Teardown Crew</span>
+                          <p className="text-xs text-muted-foreground">Event setup & cleanup</p>
+                        </div>
+                      </div>
+                      <Switch checked={includeSetupCrew} onCheckedChange={setIncludeSetupCrew} />
+                    </div>
+                    
+                    {includeSetupCrew && (
+                      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border/50">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Qty</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={numSetupCrew}
+                            onChange={(e) => setNumSetupCrew(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Hours</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={12}
+                            step={0.5}
+                            value={setupCrewHours}
+                            onChange={(e) => setSetupCrewHours(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Rate ($/hr)</Label>
+                          <Input
+                            type="number"
+                            min={15}
+                            max={60}
+                            value={setupCrewRate}
+                            onChange={(e) => setSetupCrewRate(Number(e.target.value) || 30)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Staffing Breakdown Table */}
+                  {staffingBreakdown.items.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <h3 className="text-sm font-semibold mb-4">Staffing Cost Breakdown</h3>
+                      <div className="rounded-lg border border-border overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="text-xs">Service</TableHead>
+                              <TableHead className="text-xs text-center">Qty</TableHead>
+                              <TableHead className="text-xs text-center">Hours</TableHead>
+                              <TableHead className="text-xs text-center">Rate</TableHead>
+                              <TableHead className="text-xs text-right">Subtotal</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {staffingBreakdown.items.map((item, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-medium text-sm">
+                                  <div className="flex items-center gap-2">
+                                    {item.name}
+                                    {item.locked && (
+                                      <Lock className="w-3 h-3 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center text-sm">{item.qty}</TableCell>
+                                <TableCell className="text-center text-sm">{item.hours}</TableCell>
+                                <TableCell className="text-center text-sm">${item.rate}/hr</TableCell>
+                                <TableCell className="text-right font-medium text-sm">
+                                  {formatCurrency(item.subtotal)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            <TableRow className="bg-muted/30">
+                              <TableCell colSpan={4} className="font-semibold">
+                                Staffing Subtotal
+                              </TableCell>
+                              <TableCell className="text-right font-bold text-primary">
+                                {formatCurrency(staffingBreakdown.total)}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -401,12 +736,14 @@ export default function Calculator() {
                     <span className="font-medium text-destructive/80">-{formatCurrency(venueCost)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-border/50">
-                    <span className="text-muted-foreground">Staffing</span>
-                    <span className="font-medium text-destructive/80">-{formatCurrency(staffingCost)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border/50">
                     <span className="text-muted-foreground">Equipment / Misc</span>
                     <span className="font-medium text-destructive/80">-{formatCurrency(equipmentCost)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border/50">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Users className="w-4 h-4" /> Staffing & Services
+                    </span>
+                    <span className="font-medium text-destructive/80">-{formatCurrency(staffingBreakdown.total)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3">
                     <span className="font-semibold">Total Costs</span>
@@ -458,6 +795,7 @@ export default function Calculator() {
                       ticketPrice,
                       totalRevenue: calculations.totalRevenue,
                       totalCosts: calculations.totalCosts,
+                      staffingCost: staffingBreakdown.total,
                       netProfit: calculations.netEventProfit,
                       yourTakeHome: calculations.yourTakeHome,
                       feeModel: isProfitShare ? "profit-share" : "service-fee",
