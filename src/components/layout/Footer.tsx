@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Zap, Instagram, Twitter, Mail } from "lucide-react";
+import { Instagram, Twitter, Mail } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export function Footer() {
   return (
@@ -8,17 +9,19 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-lg text-foreground">
-                Clubless Collective
-              </span>
+            <Link to="/" className="flex items-center gap-3 mb-4">
+              <img 
+                src={logo} 
+                alt="Clubless Collective" 
+                className="h-12 w-auto"
+              />
             </Link>
-            <p className="text-muted-foreground text-sm max-w-xs">
-              Empowering DJs and promoters to host profitable pop-up events
-              without the club overhead.
+            <p className="text-muted-foreground text-sm max-w-sm">
+              Built by nightlife insiders for the next generation of creatives.
+              Turn any space into your own club, any event into your playground.
+            </p>
+            <p className="text-muted-foreground/60 text-xs mt-4">
+              Starting in Seattle. Growing city by city. One party at a time.
             </p>
           </div>
 
@@ -63,19 +66,19 @@ export function Footer() {
             <div className="flex gap-4">
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-secondary/80 transition-colors"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
               >
                 <Instagram className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-secondary/80 transition-colors"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
               >
                 <Twitter className="w-5 h-5" />
               </a>
               <a
-                href="mailto:hello@clubless.co"
-                className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-secondary/80 transition-colors"
+                href="mailto:hello@clublesscollective.com"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
               >
                 <Mail className="w-5 h-5" />
               </a>
@@ -85,7 +88,7 @@ export function Footer() {
 
         <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 Clubless Collective. All rights reserved.
+            © 2025 Clubless Collective. Nightlife Reimagined.
           </p>
           <div className="flex gap-6">
             <a
