@@ -20,6 +20,8 @@ export type Database = {
           created_at: string
           email: string
           event_concept: string
+          eventbrite_status: string | null
+          eventbrite_url: string | null
           fee_model: string
           id: string
           instagram_handle: string | null
@@ -34,6 +36,8 @@ export type Database = {
           created_at?: string
           email: string
           event_concept: string
+          eventbrite_status?: string | null
+          eventbrite_url?: string | null
           fee_model: string
           id?: string
           instagram_handle?: string | null
@@ -48,6 +52,8 @@ export type Database = {
           created_at?: string
           email?: string
           event_concept?: string
+          eventbrite_status?: string | null
+          eventbrite_url?: string | null
           fee_model?: string
           id?: string
           instagram_handle?: string | null
