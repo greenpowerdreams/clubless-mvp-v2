@@ -41,6 +41,8 @@ import {
   UtensilsCrossed,
   Percent,
   Info,
+  Zap,
+  Clock,
 } from "lucide-react";
 
 // Locked rates (non-editable)
@@ -57,6 +59,10 @@ export default function Calculator() {
   // Base costs
   const [venueCost, setVenueCost] = useState(2000);
   const [equipmentCost, setEquipmentCost] = useState(500);
+  
+  // Event duration for smart staffing
+  const [eventDurationHours, setEventDurationHours] = useState(6);
+  const [showAutoFillNote, setShowAutoFillNote] = useState(false);
   
   // Staffing toggles and inputs
   const [includeBartending, setIncludeBartending] = useState(true);
@@ -90,7 +96,26 @@ export default function Calculator() {
   // Fee model toggle
   const [isProfitShare, setIsProfitShare] = useState(false);
 
-  // Staffing calculations
+  // Smart staffing auto-fill function
+  const handleAutoFillStaffing = () => {
+    // Bartenders: 1 per 75 attendees, minimum 1
+    const recommendedBartenders = Math.max(1, Math.ceil(attendance / 75));
+    // Security: 1 per 100 attendees, minimum 1
+    const recommendedSecurity = Math.max(1, Math.ceil(attendance / 100));
+    
+    // Enable and set bartending
+    setIncludeBartending(true);
+    setNumBartenders(recommendedBartenders);
+    setBartenderHours(eventDurationHours);
+    
+    // Enable and set security
+    setIncludeSecurity(true);
+    setNumSecurity(recommendedSecurity);
+    setSecurityHours(eventDurationHours);
+    
+    // Show the override note
+    setShowAutoFillNote(true);
+  };
   const staffingBreakdown = useMemo(() => {
     const items = [];
     
@@ -412,12 +437,70 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Staffing & Services - NEW SECTION */}
+              {/* Staffing & Services */}
               <div className="glass rounded-2xl p-6 md:p-8">
-                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Staffing & Services
-                </h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    Staffing & Services
+                  </h2>
+                </div>
+                
+                {/* Smart Staffing Suggestions */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 mb-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                      <Zap className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <h3 className="font-semibold text-sm mb-1">Smart Staffing Suggestions</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Auto-fill recommended staffing based on your event size and duration
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-end gap-4">
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-xs flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Event Duration (hours)
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={24}
+                            step={0.5}
+                            value={eventDurationHours}
+                            onChange={(e) => setEventDurationHours(Number(e.target.value) || 1)}
+                            className="h-9"
+                          />
+                        </div>
+                        <Button
+                          variant="gradient"
+                          size="sm"
+                          onClick={handleAutoFillStaffing}
+                          className="gap-2"
+                        >
+                          <Zap className="w-4 h-4" />
+                          Auto-fill Staffing
+                        </Button>
+                      </div>
+                      
+                      {showAutoFillNote && (
+                        <p className="text-xs text-primary flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Staffing auto-filled! You can override these numbers below.
+                        </p>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
+                        <p>• Bartenders: 1 per 75 guests ({Math.max(1, Math.ceil(attendance / 75))} recommended)</p>
+                        <p>• Security: 1 per 100 guests ({Math.max(1, Math.ceil(attendance / 100))} recommended)</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="space-y-6">
                   {/* Bartending - Locked Rate */}
