@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,39 +13,57 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Calendar, Users, MapPin, Music } from "lucide-react";
+import { Send, Calendar, MapPin, CheckCircle2, Instagram } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormData {
   name: string;
   email: string;
-  phone: string;
-  eventName: string;
-  eventType: string;
-  expectedGuests: string;
-  preferredDate: string;
-  location: string;
-  description: string;
-  experience: string;
-  socialLinks: string;
+  instagram_handle: string;
+  city: string;
+  event_concept: string;
+  preferred_date: string;
+  fee_model: string;
+}
+
+interface ProfitSummary {
+  attendance: number;
+  ticketPrice: number;
+  totalRevenue: number;
+  totalCosts: number;
+  netProfit: number;
+  yourTakeHome: number;
+  feeModel: string;
 }
 
 export default function SubmitEvent() {
-  const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null);
+  
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
-    phone: "",
-    eventName: "",
-    eventType: "",
-    expectedGuests: "",
-    preferredDate: "",
-    location: "",
-    description: "",
-    experience: "",
-    socialLinks: "",
+    instagram_handle: "",
+    city: "",
+    event_concept: "",
+    preferred_date: "",
+    fee_model: "service-fee",
   });
+
+  // Load calculator data from navigation state
+  useEffect(() => {
+    if (location.state?.calculatorData) {
+      const data = location.state.calculatorData;
+      setProfitSummary(data);
+      setFormData(prev => ({
+        ...prev,
+        fee_model: data.feeModel || "service-fee",
+      }));
+    }
+  }, [location.state]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -62,27 +80,101 @@ export default function SubmitEvent() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const { error } = await supabase.from("event_proposals").insert([{
+        name: formData.name,
+        email: formData.email,
+        instagram_handle: formData.instagram_handle || null,
+        city: formData.city,
+        event_concept: formData.event_concept,
+        preferred_date: formData.preferred_date,
+        fee_model: formData.fee_model,
+        profit_summary: profitSummary ? JSON.parse(JSON.stringify(profitSummary)) : null,
+        status: "pending",
+      }]);
 
-    // Store in localStorage for admin dashboard demo
-    const proposals = JSON.parse(localStorage.getItem("eventProposals") || "[]");
-    proposals.push({
-      ...formData,
-      id: Date.now().toString(),
-      submittedAt: new Date().toISOString(),
-      status: "pending",
-    });
-    localStorage.setItem("eventProposals", JSON.stringify(proposals));
+      if (error) throw error;
 
-    toast({
-      title: "Proposal Submitted!",
-      description: "We'll review your event and get back to you within 48 hours.",
-    });
-
-    setIsSubmitting(false);
-    navigate("/");
+      setIsSubmitted(true);
+      toast({
+        title: "Proposal Submitted!",
+        description: "We'll review your event and get back to you soon.",
+      });
+    } catch (error) {
+      console.error("Error submitting proposal:", error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your proposal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Success screen
+  if (isSubmitted) {
+    return (
+      <Layout>
+        <section className="pt-12 pb-20 md:pt-20 md:pb-32">
+          <div className="container px-4">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-8">
+                <CheckCircle2 className="w-10 h-10 text-green-500" />
+              </div>
+              
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
+                Proposal <span className="text-gradient">Submitted!</span>
+              </h1>
+              
+              <p className="text-lg text-muted-foreground mb-8">
+                Thank you for your interest in hosting an event with Clubless Collective.
+              </p>
+
+              <div className="glass rounded-2xl p-8 text-left mb-8">
+                <h2 className="font-display text-xl font-semibold mb-4">What Happens Next?</h2>
+                <ol className="space-y-4 text-muted-foreground">
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">1</span>
+                    <span><strong className="text-foreground">Review (24-48 hours):</strong> Our team will review your event concept and profit projections.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">2</span>
+                    <span><strong className="text-foreground">Discovery Call:</strong> If your event is a good fit, we'll schedule a call to discuss details.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">3</span>
+                    <span><strong className="text-foreground">Planning:</strong> We'll work together on venue selection, marketing, and logistics.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">4</span>
+                    <span><strong className="text-foreground">Launch:</strong> Your event goes live and you start making money!</span>
+                  </li>
+                </ol>
+              </div>
+
+              <p className="text-sm text-muted-foreground mb-6">
+                We'll send updates to <strong className="text-foreground">{formData.email}</strong>
+              </p>
+
+              <Button variant="gradient" size="lg" asChild>
+                <a href="/">Return to Home</a>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -100,6 +192,35 @@ export default function SubmitEvent() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Calculator Summary */}
+              {profitSummary && (
+                <div className="relative rounded-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-primary opacity-90" />
+                  <div className="relative z-10 p-6 md:p-8">
+                    <h2 className="font-display text-xl font-semibold mb-4 text-primary-foreground">
+                      Your Profit Projection
+                    </h2>
+                    <div className="grid sm:grid-cols-3 gap-4 text-primary-foreground">
+                      <div>
+                        <p className="text-sm opacity-70">Expected Attendance</p>
+                        <p className="text-2xl font-bold">{profitSummary.attendance}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-70">Total Revenue</p>
+                        <p className="text-2xl font-bold">{formatCurrency(profitSummary.totalRevenue)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-70">Your Take-Home</p>
+                        <p className="text-2xl font-bold">{formatCurrency(profitSummary.yourTakeHome)}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm opacity-70 mt-4">
+                      Fee Model: {profitSummary.feeModel === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Contact Info */}
               <div className="glass rounded-2xl p-8">
                 <h2 className="font-display text-xl font-semibold mb-6">
@@ -132,25 +253,31 @@ export default function SubmitEvent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="instagram_handle" className="flex items-center gap-2">
+                      <Instagram className="w-4 h-4" />
+                      Instagram Handle
+                    </Label>
                     <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
+                      id="instagram_handle"
+                      name="instagram_handle"
+                      value={formData.instagram_handle}
                       onChange={handleChange}
-                      placeholder="(555) 123-4567"
+                      placeholder="@yourhandle"
                       className="bg-secondary/50"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="socialLinks">Social Media / Website</Label>
+                    <Label htmlFor="city">
+                      <MapPin className="w-4 h-4 inline mr-2" />
+                      City *
+                    </Label>
                     <Input
-                      id="socialLinks"
-                      name="socialLinks"
-                      value={formData.socialLinks}
+                      id="city"
+                      name="city"
+                      value={formData.city}
                       onChange={handleChange}
-                      placeholder="@yourhandle or URL"
+                      placeholder="e.g., Los Angeles, New York"
+                      required
                       className="bg-secondary/50"
                     />
                   </div>
@@ -165,124 +292,50 @@ export default function SubmitEvent() {
                 <div className="space-y-6">
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="eventName">
-                        <Music className="w-4 h-4 inline mr-2" />
-                        Event Name *
-                      </Label>
-                      <Input
-                        id="eventName"
-                        name="eventName"
-                        value={formData.eventName}
-                        onChange={handleChange}
-                        placeholder="e.g., Neon Nights"
-                        required
-                        className="bg-secondary/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Event Type *</Label>
-                      <Select
-                        value={formData.eventType}
-                        onValueChange={(v) => handleSelectChange("eventType", v)}
-                        required
-                      >
-                        <SelectTrigger className="bg-secondary/50">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="dj-night">DJ Night</SelectItem>
-                          <SelectItem value="live-music">Live Music</SelectItem>
-                          <SelectItem value="album-release">Album Release</SelectItem>
-                          <SelectItem value="themed-party">Themed Party</SelectItem>
-                          <SelectItem value="private-event">Private Event</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label>
-                        <Users className="w-4 h-4 inline mr-2" />
-                        Expected Guests *
-                      </Label>
-                      <Select
-                        value={formData.expectedGuests}
-                        onValueChange={(v) =>
-                          handleSelectChange("expectedGuests", v)
-                        }
-                        required
-                      >
-                        <SelectTrigger className="bg-secondary/50">
-                          <SelectValue placeholder="Select range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="50-100">50-100 guests</SelectItem>
-                          <SelectItem value="100-200">100-200 guests</SelectItem>
-                          <SelectItem value="200-300">200-300 guests</SelectItem>
-                          <SelectItem value="300-500">300-500 guests</SelectItem>
-                          <SelectItem value="500+">500+ guests</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="preferredDate">
+                      <Label htmlFor="preferred_date">
                         <Calendar className="w-4 h-4 inline mr-2" />
                         Preferred Date *
                       </Label>
                       <Input
-                        id="preferredDate"
-                        name="preferredDate"
+                        id="preferred_date"
+                        name="preferred_date"
                         type="date"
-                        value={formData.preferredDate}
+                        value={formData.preferred_date}
                         onChange={handleChange}
                         required
                         className="bg-secondary/50"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Fee Model *</Label>
+                      <Select
+                        value={formData.fee_model}
+                        onValueChange={(v) => handleSelectChange("fee_model", v)}
+                        required
+                      >
+                        <SelectTrigger className="bg-secondary/50">
+                          <SelectValue placeholder="Select fee model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="service-fee">Service Fee (15%)</SelectItem>
+                          <SelectItem value="profit-share">Profit Share (50/50)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location">
-                      <MapPin className="w-4 h-4 inline mr-2" />
-                      Preferred City/Area *
-                    </Label>
-                    <Input
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      placeholder="e.g., Downtown LA, Brooklyn, Miami Beach"
-                      required
-                      className="bg-secondary/50"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">
-                      Event Description & Vision *
+                    <Label htmlFor="event_concept">
+                      Event Concept Description *
                     </Label>
                     <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
+                      id="event_concept"
+                      name="event_concept"
+                      value={formData.event_concept}
                       onChange={handleChange}
-                      placeholder="Tell us about your event concept, the vibe you're going for, your target audience, and any special requirements..."
+                      placeholder="Tell us about your event concept, the vibe you're going for, your target audience, expected attendance, and any special requirements..."
                       required
-                      className="bg-secondary/50 min-h-[120px]"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="experience">Your Experience</Label>
-                    <Textarea
-                      id="experience"
-                      name="experience"
-                      value={formData.experience}
-                      onChange={handleChange}
-                      placeholder="Tell us about your experience hosting events or DJing. Past events, residencies, followers, etc."
-                      className="bg-secondary/50 min-h-[100px]"
+                      className="bg-secondary/50 min-h-[150px]"
                     />
                   </div>
                 </div>
