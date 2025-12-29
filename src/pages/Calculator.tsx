@@ -14,6 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   ArrowRight,
   Users,
@@ -31,6 +38,9 @@ import {
   DoorOpen,
   HardHat,
   Lock,
+  UtensilsCrossed,
+  Percent,
+  Info,
 } from "lucide-react";
 
 // Locked rates (non-editable)
@@ -66,6 +76,16 @@ export default function Calculator() {
   const [numSetupCrew, setNumSetupCrew] = useState(2);
   const [setupCrewHours, setSetupCrewHours] = useState(3);
   const [setupCrewRate, setSetupCrewRate] = useState(30);
+  
+  // Catering inputs
+  const [includeCatering, setIncludeCatering] = useState(false);
+  const [cateringMode, setCateringMode] = useState<"per-person" | "flat">("per-person");
+  const [cateringGuests, setCateringGuests] = useState(200); // Will sync with attendance
+  const [cateringCostPerPerson, setCateringCostPerPerson] = useState(12);
+  const [cateringPackageCost, setCateringPackageCost] = useState(2500);
+  
+  // Service markup
+  const [serviceMarkupPercent, setServiceMarkupPercent] = useState(15);
   
   // Fee model toggle
   const [isProfitShare, setIsProfitShare] = useState(false);
@@ -128,14 +148,58 @@ export default function Calculator() {
     includeSetupCrew, numSetupCrew, setupCrewHours, setupCrewRate,
   ]);
 
+  // Catering calculations
+  const cateringBreakdown = useMemo(() => {
+    if (!includeCatering) {
+      return { cost: 0, mode: cateringMode, guests: 0, perPersonRate: 0, packageCost: 0 };
+    }
+    
+    if (cateringMode === "per-person") {
+      return {
+        cost: cateringGuests * cateringCostPerPerson,
+        mode: cateringMode,
+        guests: cateringGuests,
+        perPersonRate: cateringCostPerPerson,
+        packageCost: 0,
+      };
+    } else {
+      return {
+        cost: cateringPackageCost,
+        mode: cateringMode,
+        guests: 0,
+        perPersonRate: 0,
+        packageCost: cateringPackageCost,
+      };
+    }
+  }, [includeCatering, cateringMode, cateringGuests, cateringCostPerPerson, cateringPackageCost]);
+
+  // Services total with markup (staffing + catering only, not venue)
+  const servicesBreakdown = useMemo(() => {
+    const staffingCost = staffingBreakdown.total;
+    const cateringCost = cateringBreakdown.cost;
+    const subtotal = staffingCost + cateringCost;
+    const markupPercent = serviceMarkupPercent / 100;
+    const markupAmount = subtotal * markupPercent;
+    const total = subtotal + markupAmount;
+    
+    return {
+      staffingCost,
+      cateringCost,
+      subtotal,
+      markupPercent: serviceMarkupPercent,
+      markupAmount,
+      total,
+    };
+  }, [staffingBreakdown.total, cateringBreakdown.cost, serviceMarkupPercent]);
+
   const calculations = useMemo(() => {
     // Revenue calculations
     const ticketRevenue = attendance * ticketPrice;
     const barRevenue = attendance * drinksPerAttendee * drinkPrice;
     const totalRevenue = ticketRevenue + barRevenue;
 
-    // Cost calculations (venue + equipment + staffing)
-    const totalCosts = venueCost + equipmentCost + staffingBreakdown.total;
+    // Cost calculations (venue + equipment + services total with markup)
+    const totalCosts = venueCost + equipmentCost + servicesBreakdown.total;
 
     // Net profit before Clubless fee
     const netEventProfit = Math.max(0, totalRevenue - totalCosts);
@@ -169,7 +233,15 @@ export default function Calculator() {
       yourPercentage,
       profitPerGuest,
     };
-  }, [attendance, ticketPrice, drinksPerAttendee, drinkPrice, venueCost, equipmentCost, staffingBreakdown.total, isProfitShare]);
+  }, [attendance, ticketPrice, drinksPerAttendee, drinkPrice, venueCost, equipmentCost, servicesBreakdown.total, isProfitShare]);
+
+  // Sync catering guests with attendance when in per-person mode
+  const handleAttendanceChange = (value: number) => {
+    setAttendance(value);
+    if (cateringMode === "per-person" && cateringGuests === attendance) {
+      setCateringGuests(value);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -216,7 +288,7 @@ export default function Calculator() {
                     </div>
                     <Slider
                       value={[attendance]}
-                      onValueChange={(v) => setAttendance(v[0])}
+                      onValueChange={(v) => handleAttendanceChange(v[0])}
                       min={50}
                       max={1000}
                       step={10}
@@ -608,7 +680,194 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Fee Model Toggle */}
+              {/* Catering Section */}
+              <div className="glass rounded-2xl p-6 md:p-8">
+                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-primary" />
+                  Catering
+                </h2>
+                
+                <div className="space-y-6">
+                  {/* Include Catering Toggle */}
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                        <UtensilsCrossed className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <span className="font-semibold">Include Catering</span>
+                        <p className="text-xs text-muted-foreground">Food service for your event</p>
+                      </div>
+                    </div>
+                    <Switch checked={includeCatering} onCheckedChange={setIncludeCatering} />
+                  </div>
+                  
+                  {includeCatering && (
+                    <div className="space-y-6">
+                      {/* Catering Mode Selection */}
+                      <RadioGroup
+                        value={cateringMode}
+                        onValueChange={(v) => setCateringMode(v as "per-person" | "flat")}
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <div className={`p-4 rounded-xl border transition-all cursor-pointer ${cateringMode === "per-person" ? 'bg-primary/20 border-primary/40' : 'bg-secondary/30 border-border/50'}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <RadioGroupItem value="per-person" id="per-person" />
+                            <Label htmlFor="per-person" className="font-semibold cursor-pointer">Per-Person</Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">Cost per guest</p>
+                        </div>
+                        <div className={`p-4 rounded-xl border transition-all cursor-pointer ${cateringMode === "flat" ? 'bg-primary/20 border-primary/40' : 'bg-secondary/30 border-border/50'}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <RadioGroupItem value="flat" id="flat" />
+                            <Label htmlFor="flat" className="font-semibold cursor-pointer">Flat Package</Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">Fixed package price</p>
+                        </div>
+                      </RadioGroup>
+                      
+                      {/* Per-Person Inputs */}
+                      {cateringMode === "per-person" && (
+                        <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-secondary/30 border border-border/50">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Number of Guests</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={1000}
+                              value={cateringGuests}
+                              onChange={(e) => setCateringGuests(Number(e.target.value) || 1)}
+                              className="h-9"
+                            />
+                            <p className="text-xs text-muted-foreground">Defaults to attendance</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Cost per Person</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={cateringCostPerPerson}
+                                onChange={(e) => setCateringCostPerPerson(Number(e.target.value) || 1)}
+                                className="h-9 pl-7"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Flat Package Input */}
+                      {cateringMode === "flat" && (
+                        <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Package Cost</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={cateringPackageCost}
+                                onChange={(e) => setCateringPackageCost(Number(e.target.value) || 0)}
+                                className="h-9 pl-7"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Catering Summary */}
+                      <div className="flex justify-between items-center p-4 rounded-xl bg-muted/30 border border-border">
+                        <span className="font-medium">Catering Cost</span>
+                        <span className="font-bold text-primary">{formatCurrency(cateringBreakdown.cost)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Service Markup Section */}
+              <TooltipProvider>
+                <div className="glass rounded-2xl p-6 md:p-8">
+                  <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
+                    <Percent className="w-5 h-5 text-primary" />
+                    Service Markup
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Markup covers coordination/overhead. Applied to staffing + catering only (not venue rental).</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </h2>
+                  
+                  <div className="space-y-6">
+                    {/* Markup Slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <Label className="text-sm font-medium">Markup Percentage</Label>
+                        <span className="text-2xl font-display font-bold text-gradient">{serviceMarkupPercent}%</span>
+                      </div>
+                      <Slider
+                        value={[serviceMarkupPercent]}
+                        onValueChange={(v) => setServiceMarkupPercent(v[0])}
+                        min={0}
+                        max={30}
+                        step={1}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                        <span>0%</span>
+                        <span>30%</span>
+                      </div>
+                    </div>
+                    
+                    {/* Services Breakdown Table */}
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="text-xs">Item</TableHead>
+                            <TableHead className="text-xs text-right">Amount</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="text-sm">Staffing Subtotal</TableCell>
+                            <TableCell className="text-right text-sm">{formatCurrency(servicesBreakdown.staffingCost)}</TableCell>
+                          </TableRow>
+                          {includeCatering && (
+                            <TableRow>
+                              <TableCell className="text-sm">Catering</TableCell>
+                              <TableCell className="text-right text-sm">{formatCurrency(servicesBreakdown.cateringCost)}</TableCell>
+                            </TableRow>
+                          )}
+                          <TableRow className="border-t border-border">
+                            <TableCell className="font-medium text-sm">Services Subtotal</TableCell>
+                            <TableCell className="text-right font-medium text-sm">{formatCurrency(servicesBreakdown.subtotal)}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="text-sm text-muted-foreground">
+                              Markup ({servicesBreakdown.markupPercent}%)
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-muted-foreground">
+                              +{formatCurrency(servicesBreakdown.markupAmount)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="bg-muted/30">
+                            <TableCell className="font-semibold">Services Total</TableCell>
+                            <TableCell className="text-right font-bold text-primary">
+                              {formatCurrency(servicesBreakdown.total)}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              </TooltipProvider>
+
               <div className="glass rounded-2xl p-6 md:p-8">
                 <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
                   <PieChart className="w-5 h-5 text-primary" />
@@ -740,10 +999,20 @@ export default function Calculator() {
                     <span className="font-medium text-destructive/80">-{formatCurrency(equipmentCost)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-border/50">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Users className="w-4 h-4" /> Staffing & Services
-                    </span>
-                    <span className="font-medium text-destructive/80">-{formatCurrency(staffingBreakdown.total)}</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-muted-foreground flex items-center gap-2 cursor-help">
+                            <Users className="w-4 h-4" /> Services (incl. markup)
+                            <Info className="w-3 h-3" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Staffing + Catering + {servicesBreakdown.markupPercent}% markup</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="font-medium text-destructive/80">-{formatCurrency(servicesBreakdown.total)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3">
                     <span className="font-semibold">Total Costs</span>
