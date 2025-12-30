@@ -1,10 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+// Declare EdgeRuntime for background tasks
+declare const EdgeRuntime: {
+  waitUntil: (promise: Promise<unknown>) => void;
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const ADMIN_EMAIL = "aj33green7@gmail.com";
 
 interface ProposalSubmission {
   submitter_name: string;
@@ -18,7 +25,7 @@ interface ProposalSubmission {
   projected_revenue?: number;
   projected_costs?: number;
   projected_profit?: number;
-  user_id?: string; // Now passed from frontend when user is logged in
+  user_id?: string;
 }
 
 // Helper to log errors to the error_logs table
@@ -64,6 +71,86 @@ async function logEmail(
     });
   } catch (err) {
     console.error("Failed to log email:", err);
+  }
+}
+
+// Send admin notification for new event submission (non-blocking)
+async function sendAdminEventNotification(
+  supabase: any,
+  RESEND_API_KEY: string,
+  submission: ProposalSubmission,
+  proposalId: string
+) {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+  const adminLink = `${siteUrl}/admin`;
+  const feeModelLabel = submission.fee_model === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)";
+  const projectedProfitText = submission.projected_profit 
+    ? `$${submission.projected_profit.toLocaleString()}` 
+    : "TBD";
+
+  try {
+    console.log("send_admin_notification: Sending event submission notification to admin");
+    
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: "Clubless Collective System <andrew@clublesscollective.com>",
+        reply_to: "andrew@clublesscollective.com",
+        to: [ADMIN_EMAIL],
+        subject: `New event submitted – ${submission.city} | ${submission.preferred_event_date}`,
+        html: `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey Andrew,</p>
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">A new event proposal was just submitted.</p>
+  
+  <div style="background: #f8f8f8; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 15px; line-height: 1.8;">
+    <strong>Submitted by:</strong> ${submission.submitter_name}<br/>
+    <strong>Email:</strong> ${submission.submitter_email}<br/>
+    <strong>City:</strong> ${submission.city}<br/>
+    <strong>Preferred date:</strong> ${submission.preferred_event_date}<br/>
+    <strong>Projected profit:</strong> ${projectedProfitText}<br/>
+    <strong>Fee model:</strong> ${feeModelLabel}
+  </div>
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Review and respond here:<br/>
+  <a href="${adminLink}" style="color: #7c3aed;">${adminLink}</a></p>
+  
+  <p style="font-size: 14px; color: #888; margin-top: 24px;">— Clubless System</p>
+</div>
+        `,
+      }),
+    });
+
+    const resData = await res.json();
+
+    if (res.ok) {
+      console.log("send_admin_notification: Event notification sent to admin");
+      await logEmail(supabase, ADMIN_EMAIL, "admin_notification", "sent", resData.id, undefined, { 
+        trigger: "event_submission", 
+        proposal_id: proposalId,
+        submitter_email: submission.submitter_email
+      });
+    } else {
+      console.error("send_admin_notification: Failed to send:", resData);
+      await logEmail(supabase, ADMIN_EMAIL, "admin_notification", "failed", undefined, resData.message, { 
+        trigger: "event_submission", 
+        proposal_id: proposalId,
+        submitter_email: submission.submitter_email
+      });
+    }
+  } catch (error) {
+    console.error("send_admin_notification: Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    await logEmail(supabase, ADMIN_EMAIL, "admin_notification", "failed", undefined, errorMessage, { 
+      trigger: "event_submission", 
+      proposal_id: proposalId,
+      submitter_email: submission.submitter_email
+    });
   }
 }
 
@@ -147,8 +234,13 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log("submit_proposal: Proposal created successfully:", proposal.id);
 
-    // Send confirmation email
+    // Send admin notification in background (non-blocking)
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (RESEND_API_KEY) {
+      EdgeRuntime.waitUntil(sendAdminEventNotification(supabase, RESEND_API_KEY, submission, proposal.id));
+    }
+
+    // Send confirmation email to user
     const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
     const portalLink = `${siteUrl}/portal/events/${proposal.id}`;
     const feeModelLabel = submission.fee_model === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)";
