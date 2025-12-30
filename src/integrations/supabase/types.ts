@@ -14,10 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      error_logs: {
+        Row: {
+          details: Json | null
+          error_message: string | null
+          event_type: string
+          id: string
+          resolved: boolean | null
+          timestamp: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          details?: Json | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          resolved?: boolean | null
+          timestamp?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          details?: Json | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          resolved?: boolean | null
+          timestamp?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       event_proposals: {
         Row: {
           approved_at: string | null
           city: string
+          completed_at: string | null
           created_at: string
           event_concept: string
           eventbrite_status: string | null
@@ -42,6 +76,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           city: string
+          completed_at?: string | null
           created_at?: string
           event_concept: string
           eventbrite_status?: string | null
@@ -66,6 +101,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           city?: string
+          completed_at?: string | null
           created_at?: string
           event_concept?: string
           eventbrite_status?: string | null
