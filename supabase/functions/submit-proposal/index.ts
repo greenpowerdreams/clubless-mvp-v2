@@ -121,7 +121,7 @@ async function sendAdminEventNotification(
   submission: ProposalSubmission,
   proposalId: string
 ) {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+  const siteUrl = "https://clublesscollective.com";
   const adminLink = `${siteUrl}/admin`;
   const feeModelLabel = submission.fee_model === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)";
   const projectedProfitText = submission.projected_profit 
@@ -325,7 +325,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Send confirmation email to user
-    const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+    const siteUrl = "https://clublesscollective.com";
     const portalLink = `${siteUrl}/portal/events/${proposal.id}`;
     const feeModelLabel = submission.fee_model === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)";
     const projectedProfitText = submission.projected_profit 

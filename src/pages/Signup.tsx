@@ -95,19 +95,28 @@ export default function Signup() {
         return;
       }
 
-      // Send welcome email
+      // Send welcome email (non-blocking, don't wait for result)
       if (data.user) {
-        try {
-          await supabase.functions.invoke("send-welcome-email", {
-            body: {
-              email: email.trim(),
-              name: name.trim(),
-            },
-          });
-        } catch (emailErr) {
-          console.error("Failed to send welcome email:", emailErr);
-          // Don't block signup if email fails
-        }
+        // Use setTimeout to defer the email call after session is established
+        setTimeout(async () => {
+          try {
+            const result = await supabase.functions.invoke("send-welcome-email", {
+              body: {
+                email: email.trim(),
+                name: name.trim(),
+                user_id: data.user!.id,
+              },
+            });
+            if (result.error) {
+              console.error("Failed to send welcome email:", result.error);
+            } else {
+              console.log("Welcome email sent successfully");
+            }
+          } catch (emailErr) {
+            console.error("Failed to send welcome email:", emailErr);
+            // Don't block signup if email fails
+          }
+        }, 100);
       }
 
       toast({

@@ -10,4 +10,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-welcome-email]
-verify_jwt = true
+verify_jwt = false
+
+[functions.track-email-open]
+verify_jwt = false
