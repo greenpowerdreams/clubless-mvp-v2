@@ -12,58 +12,157 @@ interface StatusEmailRequest {
   status_notes?: string;
 }
 
-const STATUS_SUBJECTS: Record<string, string> = {
-  under_review: "Your Event Proposal is Under Review",
-  needs_info: "Action Required: We Need More Information",
-  approved: "Congratulations! Your Event is Approved",
-  published: "Your Event is Now Live!",
-  completed: "Thank You for Hosting with Clubless Collective",
-  rejected: "Update on Your Event Proposal",
-};
+// Helper to log emails
+async function logEmail(
+  supabase: any,
+  toEmail: string,
+  templateName: string,
+  status: string,
+  providerMessageId?: string,
+  error?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await supabase.from("email_logs").insert({
+      to_email: toEmail,
+      template_name: templateName,
+      status,
+      provider_message_id: providerMessageId,
+      error: error,
+      metadata: metadata,
+    });
+  } catch (err) {
+    console.error("Failed to log email:", err);
+  }
+}
 
-const STATUS_MESSAGES: Record<string, (name: string, city: string, notes?: string) => string> = {
-  under_review: (name, city) => `
-    <p>Hi ${name},</p>
-    <p>Great news! Your event proposal for <strong>${city}</strong> is now under review by our team.</p>
-    <p>We'll be in touch within 24-48 hours with next steps.</p>
-  `,
-  needs_info: (name, city, notes) => `
-    <p>Hi ${name},</p>
-    <p>We're reviewing your event proposal for <strong>${city}</strong> and need a bit more information before we can proceed.</p>
-    ${notes ? `<div style="background: #1a1a2e; border-radius: 8px; padding: 16px; margin: 16px 0;"><p style="margin: 0;"><strong>Details needed:</strong> ${notes}</p></div>` : ''}
-    <p>Please reply to this email with the requested information, or log in to your Host Portal for more details.</p>
-  `,
-  approved: (name, city) => `
-    <p>Hi ${name},</p>
-    <p>🎉 Congratulations! Your event proposal for <strong>${city}</strong> has been approved!</p>
-    <p>Our team will be in touch shortly to discuss next steps, including venue confirmation and ticketing setup.</p>
-    <p>Log in to your Host Portal to see your updated status and prepare for your event.</p>
-  `,
-  published: (name, city) => `
-    <p>Hi ${name},</p>
-    <p>Your event in <strong>${city}</strong> is now live and tickets are on sale!</p>
-    <p>Here's what you can do now:</p>
-    <ul>
-      <li>Share your event link with your network</li>
-      <li>Promote on social media</li>
-      <li>Track ticket sales in your Host Portal</li>
-    </ul>
-    <p>Let's make this event unforgettable!</p>
-  `,
-  completed: (name, city) => `
-    <p>Hi ${name},</p>
-    <p>Thank you for hosting your event in <strong>${city}</strong> with Clubless Collective!</p>
-    <p>Your payout has been processed and should arrive within 72 hours.</p>
-    <p>We'd love to hear how it went. Your feedback helps us improve for future events.</p>
-    <p>Ready to host another event? Head to your Host Portal to get started!</p>
-  `,
-  rejected: (name, city, notes) => `
-    <p>Hi ${name},</p>
-    <p>Thank you for your interest in hosting an event in <strong>${city}</strong> with Clubless Collective.</p>
-    <p>Unfortunately, we're unable to move forward with this proposal at this time.</p>
-    ${notes ? `<div style="background: #1a1a2e; border-radius: 8px; padding: 16px; margin: 16px 0;"><p style="margin: 0;"><strong>Reason:</strong> ${notes}</p></div>` : ''}
-    <p>If you have questions or would like to submit a different proposal, please don't hesitate to reach out.</p>
-  `,
+// Status-specific email content - personal, plain-text style
+const getStatusEmail = (
+  status: string,
+  firstName: string,
+  city: string,
+  portalLink: string,
+  statusNotes?: string
+): { subject: string; body: string } | null => {
+  const notesSection = statusNotes 
+    ? `<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;"><strong>Notes:</strong> ${statusNotes}</p>` 
+    : "";
+
+  switch (status) {
+    case "under_review":
+      return {
+        subject: `Your ${city} event is under review`,
+        body: `
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Good news — I am reviewing your event proposal for ${city}. I will be in touch within the next 24-48 hours with next steps.</p>
+
+${notesSection}
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Track your proposal here:<br/>
+<a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+        `,
+      };
+
+    case "needs_info":
+      return {
+        subject: `Quick question about your ${city} event`,
+        body: `
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">I have been looking at your ${city} event proposal and have a few questions before we can move forward.</p>
+
+${notesSection}
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Just reply to this email with the details and I will get back to you quickly.</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Your proposal:<br/>
+<a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+        `,
+      };
+
+    case "approved":
+      return {
+        subject: `Your ${city} event is approved!`,
+        body: `
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Great news — your event in ${city} is approved! We are moving forward.</p>
+
+${notesSection}
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">I will be setting up your Eventbrite page shortly and will send you the link once it is live.</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">View your dashboard:<br/>
+<a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+        `,
+      };
+
+    case "published":
+      return {
+        subject: `Your ${city} event is LIVE!`,
+        body: `
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Your event in ${city} is now live and tickets are on sale!</p>
+
+${notesSection}
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Time to start promoting. Share the event link with your audience and let us make this happen.</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">View your event details:<br/>
+<a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+        `,
+      };
+
+    case "completed":
+      return {
+        subject: `Congrats on your ${city} event!`,
+        body: `
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Your event in ${city} is complete. You did it!</p>
+
+${notesSection}
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Check your dashboard for the final numbers. Your payout will be processed within 5 business days.</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">View your stats:<br/>
+<a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Ready for the next one? I am here when you are.</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+        `,
+      };
+
+    case "rejected":
+      return {
+        subject: `Update on your ${city} event proposal`,
+        body: `
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">I reviewed your ${city} event proposal and unfortunately we can not move forward with this one right now.</p>
+
+${notesSection}
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">This is not the end — if you have other ideas or want to adjust your concept, reply to this email and let us talk.</p>
+
+<p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+        `,
+      };
+
+    default:
+      return null;
+  }
 };
 
 serve(async (req: Request): Promise<Response> => {
@@ -95,7 +194,7 @@ serve(async (req: Request): Promise<Response> => {
     // Fetch proposal details
     const { data: proposal, error: fetchError } = await supabase
       .from("event_proposals")
-      .select("submitter_name, submitter_email, city, preferred_event_date")
+      .select("submitter_name, submitter_email, city, id")
       .eq("id", proposal_id)
       .single();
 
@@ -107,19 +206,19 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const subject = STATUS_SUBJECTS[new_status] || "Update on Your Event Proposal";
-    const messageBuilder = STATUS_MESSAGES[new_status];
+    const firstName = proposal.submitter_name?.split(" ")[0] || "there";
+    const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+    const portalLink = `${siteUrl}/portal/events/${proposal.id}`;
+
+    const emailContent = getStatusEmail(new_status, firstName, proposal.city, portalLink, status_notes);
     
-    if (!messageBuilder) {
+    if (!emailContent) {
       console.log("send_status_email: No email template for status:", new_status);
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "No template for status" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    const messageContent = messageBuilder(proposal.submitter_name, proposal.city, status_notes);
-    const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -128,51 +227,46 @@ serve(async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Andrew @ Clubless Collective <andrew@clublesscollective.com>",
+        from: "Andrew Green <andrew@clublesscollective.com>",
         reply_to: "andrew@clublesscollective.com",
         to: [proposal.submitter_email],
-        subject: subject,
+        subject: emailContent.subject,
         html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0f; color: #ffffff;">
-            <h1 style="color: #bb86fc; margin-bottom: 24px;">${subject}</h1>
-            <div style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
-              ${messageContent}
-            </div>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${siteUrl}/portal" 
-                 style="background: linear-gradient(135deg, #bb86fc, #ff6bcb); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
-                View in Host Portal
-              </a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
-            <p style="color: #52525b; font-size: 12px; text-align: center;">
-              Clubless Collective — Host your event, keep your profit.
-            </p>
-          </div>
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  ${emailContent.body}
+  
+  <p style="font-size: 13px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+    Clubless Collective — Host your event, keep your profit.
+  </p>
+</div>
         `,
       }),
     });
 
+    const resData = await res.json();
+
     if (res.ok) {
       console.log("send_status_email: Email sent successfully to:", proposal.submitter_email);
+      await logEmail(supabase, proposal.submitter_email, `status_${new_status}`, "sent", resData.id, undefined, { proposal_id, new_status });
+      
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ success: true, message_id: resData.id }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     } else {
-      const errorData = await res.json();
-      console.error("send_status_email: Resend API error:", errorData);
+      console.error("send_status_email: Resend API error:", resData);
+      await logEmail(supabase, proposal.submitter_email, `status_${new_status}`, "failed", undefined, resData.message, { proposal_id, new_status });
       
       // Log to error_logs
       await supabase.from("error_logs").insert({
         event_type: "status_email_failed",
         user_email: proposal.submitter_email,
-        error_message: errorData.message || "Failed to send status email",
-        details: { proposal_id, new_status, resendError: errorData },
+        error_message: resData.message || "Failed to send status email",
+        details: { proposal_id, new_status, resendError: resData },
       });
 
       return new Response(
-        JSON.stringify({ success: false, error: errorData.message }),
+        JSON.stringify({ success: false, error: resData.message }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }

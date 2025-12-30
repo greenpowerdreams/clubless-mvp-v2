@@ -75,7 +75,7 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -95,9 +95,24 @@ export default function Signup() {
         return;
       }
 
+      // Send welcome email
+      if (data.user) {
+        try {
+          await supabase.functions.invoke("send-welcome-email", {
+            body: {
+              email: email.trim(),
+              name: name.trim(),
+            },
+          });
+        } catch (emailErr) {
+          console.error("Failed to send welcome email:", emailErr);
+          // Don't block signup if email fails
+        }
+      }
+
       toast({
         title: "Account created!",
-        description: "Welcome to Clubless Collective.",
+        description: "Welcome to Clubless Collective. Check your email!",
       });
       
       // Auth state change will handle redirect
