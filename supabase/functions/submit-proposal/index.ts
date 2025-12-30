@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 // Declare EdgeRuntime for background tasks
 declare const EdgeRuntime: {
@@ -13,20 +14,23 @@ const corsHeaders = {
 
 const ADMIN_EMAIL = "aj33green7@gmail.com";
 
-interface ProposalSubmission {
-  submitter_name: string;
-  submitter_email: string;
-  instagram_handle?: string;
-  city: string;
-  event_concept: string;
-  preferred_event_date: string;
-  fee_model: string;
-  full_calculator_json?: Record<string, unknown>;
-  projected_revenue?: number;
-  projected_costs?: number;
-  projected_profit?: number;
-  user_id?: string;
-}
+// Input validation schema
+const ProposalSubmissionSchema = z.object({
+  submitter_name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
+  submitter_email: z.string().trim().email("Invalid email address").max(255, "Email too long"),
+  instagram_handle: z.string().max(50, "Instagram handle too long").optional().nullable(),
+  city: z.string().trim().min(2, "City must be at least 2 characters").max(100, "City name too long"),
+  event_concept: z.string().trim().min(20, "Event concept must be at least 20 characters").max(5000, "Event concept too long"),
+  preferred_event_date: z.string().min(1, "Preferred event date is required"),
+  fee_model: z.enum(["service-fee", "profit-share"], { errorMap: () => ({ message: "Invalid fee model" }) }),
+  full_calculator_json: z.record(z.unknown()).optional().nullable(),
+  projected_revenue: z.number().nonnegative("Revenue cannot be negative").optional().nullable(),
+  projected_costs: z.number().nonnegative("Costs cannot be negative").optional().nullable(),
+  projected_profit: z.number().optional().nullable(),
+  user_id: z.string().uuid("Invalid user ID").optional().nullable(),
+});
+
+type ProposalSubmission = z.infer<typeof ProposalSubmissionSchema>;
 
 // Helper to log errors to the error_logs table
 async function logError(
@@ -170,10 +174,10 @@ serve(async (req: Request): Promise<Response> => {
     },
   });
 
-  let submission: ProposalSubmission;
+  let rawBody: unknown;
   
   try {
-    submission = await req.json();
+    rawBody = await req.json();
   } catch (e) {
     console.error("Invalid JSON in request:", e);
     return new Response(
@@ -182,16 +186,21 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  const email = submission.submitter_email?.toLowerCase().trim();
-  const firstName = submission.submitter_name?.split(" ")[0] || "there";
+  // Validate input with Zod schema
+  const validationResult = ProposalSubmissionSchema.safeParse(rawBody);
   
-  if (!email || !submission.submitter_name || !submission.city || !submission.event_concept || !submission.preferred_event_date || !submission.fee_model) {
-    console.error("Missing required fields:", { email, name: submission.submitter_name, city: submission.city });
+  if (!validationResult.success) {
+    const errors = validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+    console.error("Validation failed:", errors);
     return new Response(
-      JSON.stringify({ success: false, error: "Missing required fields" }),
+      JSON.stringify({ success: false, error: `Validation failed: ${errors}` }),
       { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
+
+  const submission = validationResult.data;
+  const email = submission.submitter_email.toLowerCase();
+  const firstName = submission.submitter_name.split(" ")[0] || "there";
 
   console.log("submit_proposal: Received submission", { email, city: submission.city, user_id: submission.user_id });
 

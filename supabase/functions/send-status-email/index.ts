@@ -1,16 +1,23 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface StatusEmailRequest {
-  proposal_id: string;
-  new_status: string;
-  status_notes?: string;
-}
+// Valid status values
+const validStatuses = ["submitted", "under_review", "needs_info", "approved", "published", "completed", "rejected"] as const;
+
+// Input validation schema
+const StatusEmailRequestSchema = z.object({
+  proposal_id: z.string().uuid("Invalid proposal ID format"),
+  new_status: z.enum(validStatuses, { errorMap: () => ({ message: "Invalid status value" }) }),
+  status_notes: z.string().max(2000, "Status notes too long").optional().nullable(),
+});
+
+type StatusEmailRequest = z.infer<typeof StatusEmailRequestSchema>;
 
 // Helper to log emails
 async function logEmail(
@@ -186,9 +193,33 @@ serve(async (req: Request): Promise<Response> => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  let rawBody: unknown;
+  
   try {
-    const { proposal_id, new_status, status_notes }: StatusEmailRequest = await req.json();
+    rawBody = await req.json();
+  } catch (e) {
+    console.error("Invalid JSON in request:", e);
+    return new Response(
+      JSON.stringify({ success: false, error: "Invalid request body" }),
+      { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
 
+  // Validate input with Zod schema
+  const validationResult = StatusEmailRequestSchema.safeParse(rawBody);
+  
+  if (!validationResult.success) {
+    const errors = validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+    console.error("Validation failed:", errors);
+    return new Response(
+      JSON.stringify({ success: false, error: `Validation failed: ${errors}` }),
+      { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  const { proposal_id, new_status, status_notes } = validationResult.data;
+
+  try {
     console.log("send_status_email: Processing", { proposal_id, new_status });
 
     // Fetch proposal details
@@ -210,7 +241,7 @@ serve(async (req: Request): Promise<Response> => {
     const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
     const portalLink = `${siteUrl}/portal/events/${proposal.id}`;
 
-    const emailContent = getStatusEmail(new_status, firstName, proposal.city, portalLink, status_notes);
+    const emailContent = getStatusEmail(new_status, firstName, proposal.city, portalLink, status_notes ?? undefined);
     
     if (!emailContent) {
       console.log("send_status_email: No email template for status:", new_status);

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 // Declare EdgeRuntime for background tasks
 declare const EdgeRuntime: {
@@ -13,10 +14,13 @@ const corsHeaders = {
 
 const ADMIN_EMAIL = "aj33green7@gmail.com";
 
-interface WelcomeEmailRequest {
-  email: string;
-  name: string;
-}
+// Input validation schema
+const WelcomeEmailRequestSchema = z.object({
+  email: z.string().trim().email("Invalid email address").max(255, "Email too long"),
+  name: z.string().trim().min(1, "Name is required").max(100, "Name too long"),
+});
+
+type WelcomeEmailRequest = z.infer<typeof WelcomeEmailRequestSchema>;
 
 // Helper to log emails
 async function logEmail(
@@ -142,10 +146,10 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  let request: WelcomeEmailRequest;
+  let rawBody: unknown;
   
   try {
-    request = await req.json();
+    rawBody = await req.json();
   } catch (e) {
     console.error("Invalid JSON in request:", e);
     return new Response(
@@ -154,17 +158,22 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  const { email, name } = request;
-  const firstName = name?.split(" ")[0] || "there";
-  const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
-  const portalLink = `${siteUrl}/portal`;
-
-  if (!email) {
+  // Validate input with Zod schema
+  const validationResult = WelcomeEmailRequestSchema.safeParse(rawBody);
+  
+  if (!validationResult.success) {
+    const errors = validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+    console.error("Validation failed:", errors);
     return new Response(
-      JSON.stringify({ success: false, error: "Email is required" }),
+      JSON.stringify({ success: false, error: `Validation failed: ${errors}` }),
       { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
+
+  const { email, name } = validationResult.data;
+  const firstName = name.split(" ")[0] || "there";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+  const portalLink = `${siteUrl}/portal`;
 
   console.log("send_welcome_email: Sending to:", email);
 
