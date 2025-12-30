@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Calendar, MapPin, CheckCircle2, Instagram, Mail, AlertCircle } from "lucide-react";
+import { Send, Calendar, MapPin, CheckCircle2, Instagram, Mail, AlertCircle, Lock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { eventSubmissionSchema, type EventSubmissionData } from "@/lib/validations";
+import { eventSubmissionSchema } from "@/lib/validations";
+import { User } from "@supabase/supabase-js";
 
 interface FormData {
   name: string;
@@ -43,10 +51,14 @@ interface FormErrors {
 
 export default function SubmitEvent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [proposalId, setProposalId] = useState<string | null>(null);
   const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   
@@ -59,6 +71,37 @@ export default function SubmitEvent() {
     preferred_date: "",
     fee_model: "service-fee",
   });
+
+  // Check auth state
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          // Pre-fill form with user data
+          setFormData(prev => ({
+            ...prev,
+            name: session.user.user_metadata?.full_name || prev.name,
+            email: session.user.email || prev.email,
+          }));
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setFormData(prev => ({
+          ...prev,
+          name: session.user.user_metadata?.full_name || prev.name,
+          email: session.user.email || prev.email,
+        }));
+      }
+      setAuthChecked(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Load calculator data from navigation state
   useEffect(() => {
@@ -77,7 +120,6 @@ export default function SubmitEvent() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -112,6 +154,12 @@ export default function SubmitEvent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Require login before submission
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    
     if (!validateForm()) {
       toast({
         title: "Validation Error",
@@ -137,21 +185,18 @@ export default function SubmitEvent() {
           projected_revenue: profitSummary?.totalRevenue || null,
           projected_costs: profitSummary?.totalCosts || null,
           projected_profit: profitSummary?.yourTakeHome || null,
+          user_id: user.id,
         },
       });
 
       if (error) throw error;
 
       setIsSubmitted(true);
-      setIsNewUser(data?.is_new_user ?? false);
-      
-      const emailNote = data?.email_sent === false 
-        ? " (Note: Email delivery pending - please use the portal login if you don't receive an email)"
-        : "";
+      setProposalId(data?.proposal_id || null);
       
       toast({
         title: "Proposal Submitted!",
-        description: (data?.message || "We'll review your event and get back to you soon.") + emailNote,
+        description: data?.message || "We'll review your event and get back to you soon.",
       });
     } catch (error) {
       console.error("Error submitting proposal:", error);
@@ -167,6 +212,20 @@ export default function SubmitEvent() {
     }
   };
 
+  const handleAuthRedirect = (type: "login" | "signup") => {
+    // Preserve form state and calculator data for when they return
+    const preservedState = {
+      calculatorData: profitSummary,
+      formData: formData,
+    };
+    navigate(`/${type}`, { 
+      state: { 
+        redirectTo: "/submit",
+        preservedState: { calculatorData: profitSummary },
+      } 
+    });
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -176,7 +235,6 @@ export default function SubmitEvent() {
     }).format(amount);
   };
 
-  // Helper to render field error
   const renderError = (field: string) => {
     if (!errors[field]) return null;
     return (
@@ -186,6 +244,17 @@ export default function SubmitEvent() {
       </p>
     );
   };
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      </Layout>
+    );
+  }
 
   // Success screen
   if (isSubmitted) {
@@ -206,20 +275,20 @@ export default function SubmitEvent() {
                 Thank you for your interest in hosting an event with Clubless Collective.
               </p>
 
-              {/* Email Check Prompt */}
               <div className="glass rounded-2xl p-6 mb-8 border border-primary/20">
                 <div className="flex items-center justify-center gap-3 mb-3">
-                  <Mail className="w-6 h-6 text-primary" />
-                  <h2 className="font-display text-xl font-semibold">Check Your Email</h2>
+                  <Sparkles className="w-6 h-6 text-primary" />
+                  <h2 className="font-display text-xl font-semibold">View Your Dashboard</h2>
                 </div>
-                <p className="text-muted-foreground">
-                  {isNewUser 
-                    ? "We've sent you a magic link to access your Host Portal. Click the link in your email to view your dashboard and track your proposal."
-                    : "Sign in to your Host Portal to track your proposal status and manage your events."
-                  }
+                <p className="text-muted-foreground mb-4">
+                  Track your proposal status and manage your events in your Host Portal.
                 </p>
-                <Button variant="gradient" size="lg" className="mt-4" asChild>
-                  <Link to="/portal/login">Go to Host Portal</Link>
+                <Button variant="gradient" size="lg" asChild>
+                  {proposalId ? (
+                    <Link to={`/portal/events/${proposalId}`}>View Proposal</Link>
+                  ) : (
+                    <Link to="/portal">Go to Dashboard</Link>
+                  )}
                 </Button>
               </div>
 
@@ -245,10 +314,6 @@ export default function SubmitEvent() {
                 </ol>
               </div>
 
-              <p className="text-sm text-muted-foreground mb-6">
-                We'll send updates to <strong className="text-foreground">{formData.email}</strong>
-              </p>
-
               <Button variant="outline" size="lg" asChild>
                 <Link to="/">Return to Home</Link>
               </Button>
@@ -261,6 +326,37 @@ export default function SubmitEvent() {
 
   return (
     <Layout>
+      {/* Auth Required Modal */}
+      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-6 h-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center">Create an Account to Submit</DialogTitle>
+            <DialogDescription className="text-center">
+              Sign up or log in to submit your event and track its status in your personal dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-4">
+            <Button 
+              variant="gradient" 
+              className="w-full"
+              onClick={() => handleAuthRedirect("signup")}
+            >
+              Create Account
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => handleAuthRedirect("login")}
+            >
+              Sign In
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <section className="pt-12 pb-20 md:pt-20 md:pb-32">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto">
@@ -272,6 +368,38 @@ export default function SubmitEvent() {
                 Tell us about your event idea. We'll review it and get back to
                 you within 48 hours with next steps.
               </p>
+              
+              {!user && (
+                <div className="mt-6 p-4 rounded-xl bg-secondary/50 border border-border inline-flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    You'll need to{" "}
+                    <button 
+                      onClick={() => handleAuthRedirect("signup")}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      create an account
+                    </button>
+                    {" "}or{" "}
+                    <button 
+                      onClick={() => handleAuthRedirect("login")}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      sign in
+                    </button>
+                    {" "}to submit.
+                  </span>
+                </div>
+              )}
+              
+              {user && (
+                <div className="mt-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 inline-flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <span className="text-sm text-green-400">
+                    Signed in as <strong>{user.email}</strong>
+                  </span>
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -318,7 +446,8 @@ export default function SubmitEvent() {
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="Your name"
-                      className={`bg-secondary/50 ${errors.name ? "border-destructive" : ""}`}
+                      disabled={!!user}
+                      className={`bg-secondary/50 ${errors.name ? "border-destructive" : ""} ${user ? "opacity-70" : ""}`}
                     />
                     {renderError("name")}
                   </div>
@@ -331,7 +460,8 @@ export default function SubmitEvent() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@email.com"
-                      className={`bg-secondary/50 ${errors.email ? "border-destructive" : ""}`}
+                      disabled={!!user}
+                      className={`bg-secondary/50 ${errors.email ? "border-destructive" : ""} ${user ? "opacity-70" : ""}`}
                     />
                     {renderError("email")}
                   </div>

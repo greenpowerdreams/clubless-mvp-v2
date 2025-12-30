@@ -18,7 +18,8 @@ import {
   Zap,
   Shield,
   Clock,
-  DollarSign
+  DollarSign,
+  Mail
 } from "lucide-react";
 
 interface EventProposal {
@@ -195,6 +196,17 @@ export default function Portal() {
       <section className="pt-8 pb-20 md:pt-12 md:pb-32">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto">
+            {/* Help Banner */}
+            <div className="mb-6 p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+              <Mail className="w-5 h-5 text-primary flex-shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                Need help? Reply to your welcome email or email{" "}
+                <a href="mailto:andrew@clublesscollective.com" className="text-primary hover:underline">
+                  andrew@clublesscollective.com
+                </a>
+              </p>
+            </div>
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <div>
