@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Calendar, MapPin, CheckCircle2, Instagram, Mail } from "lucide-react";
+import { Send, Calendar, MapPin, CheckCircle2, Instagram, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { eventSubmissionSchema, type EventSubmissionData } from "@/lib/validations";
 
 interface FormData {
   name: string;
@@ -36,6 +37,10 @@ interface ProfitSummary {
   feeModel: string;
 }
 
+interface FormErrors {
+  [key: string]: string;
+}
+
 export default function SubmitEvent() {
   const location = useLocation();
   const { toast } = useToast();
@@ -43,6 +48,7 @@ export default function SubmitEvent() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
   
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -71,24 +77,60 @@ export default function SubmitEvent() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const result = eventSubmissionSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const newErrors: FormErrors = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path[0] as string;
+        if (!newErrors[path]) {
+          newErrors[path] = issue.message;
+        }
+      });
+      setErrors(newErrors);
+      return false;
+    }
+    
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("submit-proposal", {
         body: {
-          submitter_name: formData.name,
-          submitter_email: formData.email,
-          instagram_handle: formData.instagram_handle || null,
-          city: formData.city,
-          event_concept: formData.event_concept,
+          submitter_name: formData.name.trim(),
+          submitter_email: formData.email.trim().toLowerCase(),
+          instagram_handle: formData.instagram_handle?.trim() || null,
+          city: formData.city.trim(),
+          event_concept: formData.event_concept.trim(),
           preferred_event_date: formData.preferred_date,
           fee_model: formData.fee_model,
           full_calculator_json: profitSummary || null,
@@ -102,15 +144,22 @@ export default function SubmitEvent() {
 
       setIsSubmitted(true);
       setIsNewUser(data?.is_new_user ?? false);
+      
+      const emailNote = data?.email_sent === false 
+        ? " (Note: Email delivery pending - please use the portal login if you don't receive an email)"
+        : "";
+      
       toast({
         title: "Proposal Submitted!",
-        description: data?.message || "We'll review your event and get back to you soon.",
+        description: (data?.message || "We'll review your event and get back to you soon.") + emailNote,
       });
     } catch (error) {
       console.error("Error submitting proposal:", error);
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your proposal. Please try again.",
+        description: error instanceof Error 
+          ? error.message 
+          : "There was an error submitting your proposal. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -125,6 +174,17 @@ export default function SubmitEvent() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Helper to render field error
+  const renderError = (field: string) => {
+    if (!errors[field]) return null;
+    return (
+      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+        <AlertCircle className="w-3 h-3" />
+        {errors[field]}
+      </p>
+    );
   };
 
   // Success screen
@@ -258,9 +318,9 @@ export default function SubmitEvent() {
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="Your name"
-                      required
-                      className="bg-secondary/50"
+                      className={`bg-secondary/50 ${errors.name ? "border-destructive" : ""}`}
                     />
+                    {renderError("name")}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
@@ -271,9 +331,9 @@ export default function SubmitEvent() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@email.com"
-                      required
-                      className="bg-secondary/50"
+                      className={`bg-secondary/50 ${errors.email ? "border-destructive" : ""}`}
                     />
+                    {renderError("email")}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="instagram_handle" className="flex items-center gap-2">
@@ -286,8 +346,9 @@ export default function SubmitEvent() {
                       value={formData.instagram_handle}
                       onChange={handleChange}
                       placeholder="@yourhandle"
-                      className="bg-secondary/50"
+                      className={`bg-secondary/50 ${errors.instagram_handle ? "border-destructive" : ""}`}
                     />
+                    {renderError("instagram_handle")}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city">
@@ -300,9 +361,9 @@ export default function SubmitEvent() {
                       value={formData.city}
                       onChange={handleChange}
                       placeholder="e.g., Los Angeles, New York"
-                      required
-                      className="bg-secondary/50"
+                      className={`bg-secondary/50 ${errors.city ? "border-destructive" : ""}`}
                     />
+                    {renderError("city")}
                   </div>
                 </div>
               </div>
@@ -325,18 +386,18 @@ export default function SubmitEvent() {
                         type="date"
                         value={formData.preferred_date}
                         onChange={handleChange}
-                        required
-                        className="bg-secondary/50"
+                        min={new Date().toISOString().split('T')[0]}
+                        className={`bg-secondary/50 ${errors.preferred_date ? "border-destructive" : ""}`}
                       />
+                      {renderError("preferred_date")}
                     </div>
                     <div className="space-y-2">
                       <Label>Fee Model *</Label>
                       <Select
                         value={formData.fee_model}
                         onValueChange={(v) => handleSelectChange("fee_model", v)}
-                        required
                       >
-                        <SelectTrigger className="bg-secondary/50">
+                        <SelectTrigger className={`bg-secondary/50 ${errors.fee_model ? "border-destructive" : ""}`}>
                           <SelectValue placeholder="Select fee model" />
                         </SelectTrigger>
                         <SelectContent>
@@ -344,6 +405,7 @@ export default function SubmitEvent() {
                           <SelectItem value="profit-share">Profit Share (50/50)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {renderError("fee_model")}
                     </div>
                   </div>
 
@@ -357,9 +419,12 @@ export default function SubmitEvent() {
                       value={formData.event_concept}
                       onChange={handleChange}
                       placeholder="Tell us about your event concept, the vibe you're going for, your target audience, expected attendance, and any special requirements..."
-                      required
-                      className="bg-secondary/50 min-h-[150px]"
+                      className={`bg-secondary/50 min-h-[150px] ${errors.event_concept ? "border-destructive" : ""}`}
                     />
+                    {renderError("event_concept")}
+                    <p className="text-xs text-muted-foreground">
+                      {formData.event_concept.length}/2000 characters (minimum 20)
+                    </p>
                   </div>
                 </div>
               </div>
