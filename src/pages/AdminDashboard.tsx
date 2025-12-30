@@ -300,6 +300,20 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
+      // Send status email for published status
+      try {
+        await supabase.functions.invoke("send-status-email", {
+          body: {
+            proposal_id: selectedProposal.id,
+            new_status: "published",
+            status_notes: `Your event is now live! Eventbrite link: ${eventbriteUrlInput.trim()}`,
+          },
+        });
+      } catch (emailError) {
+        console.error("Failed to send published email:", emailError);
+        // Don't fail the publish if email fails
+      }
+
       const updatedProposal = {
         ...selectedProposal,
         eventbrite_url: eventbriteUrlInput.trim(),
