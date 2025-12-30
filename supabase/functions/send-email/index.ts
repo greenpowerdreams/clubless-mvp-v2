@@ -15,16 +15,75 @@ interface EmailRequest {
   metadata?: Record<string, unknown>;
 }
 
+// Verify admin role
+async function verifyAdminRole(supabase: any, userId: string): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    return !!data;
+  } catch (error) {
+    console.error("Failed to verify admin role:", error);
+    return false;
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Initialize Supabase admin client for logging
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+  // ============================================
+  // AUTHENTICATION CHECK - Admin only
+  // This is a generic email sender - very dangerous if public
+  // ============================================
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    console.error("send_email: No authorization header");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  // Create client with user's auth token to verify identity
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    console.error("send_email: Invalid auth token:", authError?.message);
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  // Verify admin role using service role client
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const isAdmin = await verifyAdminRole(supabaseAdmin, user.id);
+  if (!isAdmin) {
+    console.error("send_email: User is not admin:", user.id);
+    return new Response(
+      JSON.stringify({ error: "Forbidden - Admin access required" }),
+      { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  console.log("send_email: Admin verified:", user.email);
+  // ============================================
 
   const logEmail = async (entry: {
     to_email: string;
@@ -56,7 +115,7 @@ serve(async (req: Request): Promise<Response> => {
   const { to, subject, html, from, template_name, metadata } = emailRequest;
   const templateName = template_name || "unknown";
   
-  console.log("email_attempt:", { to_email: to, template_name: templateName, subject });
+  console.log("email_attempt:", { to_email: to, template_name: templateName, subject, admin: user.email });
 
   await logEmail({ to_email: to, template_name: templateName, status: 'attempted', metadata: { subject, ...metadata } });
 

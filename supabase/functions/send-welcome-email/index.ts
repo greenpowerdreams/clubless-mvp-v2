@@ -12,7 +12,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_EMAIL = "aj33green7@gmail.com";
+const ADMIN_EMAIL = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "aj33green7@gmail.com";
 
 // Input validation schema
 const WelcomeEmailRequestSchema = z.object({
@@ -128,14 +128,43 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-  
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+
+  // ============================================
+  // AUTHENTICATION CHECK - User must be authenticated
+  // ============================================
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    console.error("send_welcome_email: No authorization header");
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  // Create client with user's auth token to verify identity
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    console.error("send_welcome_email: Invalid auth token:", authError?.message);
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  console.log("send_welcome_email: User verified:", user.email);
+  // ============================================
+
+  // Service role client for email logging
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 
   if (!RESEND_API_KEY) {
@@ -171,6 +200,20 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const { email, name } = validationResult.data;
+
+  // ============================================
+  // SECURITY: Verify user's email matches requested email
+  // Prevent users from sending welcome emails to arbitrary addresses
+  // ============================================
+  if (user.email?.toLowerCase() !== email.toLowerCase()) {
+    console.error("send_welcome_email: Email mismatch - user:", user.email, "requested:", email);
+    return new Response(
+      JSON.stringify({ success: false, error: "Cannot send welcome email to different address" }),
+      { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+  // ============================================
+
   const firstName = name.split(" ")[0] || "there";
   const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
   const portalLink = `${siteUrl}/portal`;
@@ -178,7 +221,7 @@ serve(async (req: Request): Promise<Response> => {
   console.log("send_welcome_email: Sending to:", email);
 
   // Send admin notification in background (non-blocking)
-  EdgeRuntime.waitUntil(sendAdminNotification(supabase, RESEND_API_KEY, email, name));
+  EdgeRuntime.waitUntil(sendAdminNotification(supabaseAdmin, RESEND_API_KEY, email, name));
 
   try {
     // Personal, plain-text style welcome email from Andrew
@@ -219,7 +262,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (res.ok) {
       console.log("send_welcome_email: Email sent successfully to:", email);
-      await logEmail(supabase, email, "welcome", "sent", resData.id);
+      await logEmail(supabaseAdmin, email, "welcome", "sent", resData.id);
       
       return new Response(
         JSON.stringify({ success: true, message_id: resData.id }),
@@ -227,7 +270,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     } else {
       console.error("send_welcome_email: Resend API error:", resData);
-      await logEmail(supabase, email, "welcome", "failed", undefined, resData.message);
+      await logEmail(supabaseAdmin, email, "welcome", "failed", undefined, resData.message);
       
       return new Response(
         JSON.stringify({ success: false, error: resData.message }),
@@ -237,7 +280,7 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error) {
     console.error("send_welcome_email: Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    await logEmail(supabase, email, "welcome", "failed", undefined, errorMessage);
+    await logEmail(supabaseAdmin, email, "welcome", "failed", undefined, errorMessage);
     
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
