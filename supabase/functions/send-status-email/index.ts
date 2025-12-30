@@ -43,6 +43,22 @@ async function logEmail(
   }
 }
 
+// Verify admin role
+async function verifyAdminRole(supabase: any, userId: string): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    return !!data;
+  } catch (error) {
+    console.error("Failed to verify admin role:", error);
+    return false;
+  }
+}
+
 // Status-specific email content - personal, plain-text style
 const getStatusEmail = (
   status: string,
@@ -178,8 +194,53 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+  // ============================================
+  // AUTHENTICATION CHECK - Admin only
+  // ============================================
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    console.error("send_status_email: No authorization header");
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  // Create client with user's auth token to verify identity
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    console.error("send_status_email: Invalid auth token:", authError?.message);
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  // Verify admin role using service role client
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const isAdmin = await verifyAdminRole(supabaseAdmin, user.id);
+  if (!isAdmin) {
+    console.error("send_status_email: User is not admin:", user.id);
+    return new Response(
+      JSON.stringify({ success: false, error: "Forbidden - Admin access required" }),
+      { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  console.log("send_status_email: Admin verified:", user.email);
+  // ============================================
 
   if (!RESEND_API_KEY) {
     console.error("send_status_email: RESEND_API_KEY not configured");
@@ -188,10 +249,6 @@ serve(async (req: Request): Promise<Response> => {
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
 
   let rawBody: unknown;
   
@@ -220,10 +277,10 @@ serve(async (req: Request): Promise<Response> => {
   const { proposal_id, new_status, status_notes } = validationResult.data;
 
   try {
-    console.log("send_status_email: Processing", { proposal_id, new_status });
+    console.log("send_status_email: Processing", { proposal_id, new_status, admin: user.email });
 
-    // Fetch proposal details
-    const { data: proposal, error: fetchError } = await supabase
+    // Fetch proposal details using service role
+    const { data: proposal, error: fetchError } = await supabaseAdmin
       .from("event_proposals")
       .select("submitter_name, submitter_email, city, id")
       .eq("id", proposal_id)
@@ -278,7 +335,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (res.ok) {
       console.log("send_status_email: Email sent successfully to:", proposal.submitter_email);
-      await logEmail(supabase, proposal.submitter_email, `status_${new_status}`, "sent", resData.id, undefined, { proposal_id, new_status });
+      await logEmail(supabaseAdmin, proposal.submitter_email, `status_${new_status}`, "sent", resData.id, undefined, { proposal_id, new_status });
       
       return new Response(
         JSON.stringify({ success: true, message_id: resData.id }),
@@ -286,10 +343,10 @@ serve(async (req: Request): Promise<Response> => {
       );
     } else {
       console.error("send_status_email: Resend API error:", resData);
-      await logEmail(supabase, proposal.submitter_email, `status_${new_status}`, "failed", undefined, resData.message, { proposal_id, new_status });
+      await logEmail(supabaseAdmin, proposal.submitter_email, `status_${new_status}`, "failed", undefined, resData.message, { proposal_id, new_status });
       
       // Log to error_logs (no user_email for PII protection)
-      await supabase.from("error_logs").insert({
+      await supabaseAdmin.from("error_logs").insert({
         event_type: "status_email_failed",
         error_message: resData.message || "Failed to send status email",
         details: { proposal_id, new_status, resendError: resData },

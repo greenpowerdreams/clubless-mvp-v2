@@ -233,12 +233,9 @@ export default function AdminDashboard() {
       try {
         await supabase.functions.invoke("send-status-email", {
           body: {
-            to: selectedProposal.submitter_email,
-            submitter_name: selectedProposal.submitter_name,
-            status: pendingStatus,
+            proposal_id: selectedProposal.id,
+            new_status: pendingStatus,
             status_notes: statusNotes.trim() || null,
-            city: selectedProposal.city,
-            event_date: selectedProposal.preferred_event_date,
           },
         });
       } catch (emailError) {
