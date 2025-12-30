@@ -58,12 +58,11 @@ serve(async (req: Request): Promise<Response> => {
   });
 
   try {
-    // Update the email log with open tracking
+    // Update the email log with open tracking (only set opened_at on first open)
     const { data, error } = await supabase
       .from("email_logs")
       .update({
         opened_at: new Date().toISOString(),
-        open_count: supabase.rpc ? undefined : 1, // Will use raw SQL increment below
       })
       .eq("tracking_id", trackingId)
       .is("opened_at", null) // Only set opened_at on first open
