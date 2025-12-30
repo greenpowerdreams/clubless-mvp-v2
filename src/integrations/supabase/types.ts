@@ -113,7 +113,7 @@ export type Database = {
           submitter_email: string
           submitter_name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           approved_at?: string | null
@@ -138,7 +138,7 @@ export type Database = {
           submitter_email: string
           submitter_name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           approved_at?: string | null
@@ -163,7 +163,7 @@ export type Database = {
           submitter_email?: string
           submitter_name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

@@ -27,7 +27,7 @@ const ProposalSubmissionSchema = z.object({
   projected_revenue: z.number().nonnegative("Revenue cannot be negative").optional().nullable(),
   projected_costs: z.number().nonnegative("Costs cannot be negative").optional().nullable(),
   projected_profit: z.number().optional().nullable(),
-  user_id: z.string().uuid("Invalid user ID").optional().nullable(),
+  user_id: z.string().uuid("Invalid user ID"),
 });
 
 type ProposalSubmission = z.infer<typeof ProposalSubmissionSchema>;
@@ -240,11 +240,19 @@ serve(async (req: Request): Promise<Response> => {
 
   console.log("submit_proposal: Received submission", { email, city: submission.city, user_id: submission.user_id });
 
-  // Use the user_id passed from frontend (user is already logged in)
-  const userId = submission.user_id || null;
+  // Require user_id - all submissions must come from authenticated users
+  const userId = submission.user_id;
+  
+  if (!userId) {
+    console.error("submit_proposal: Missing user_id - authentication required");
+    return new Response(
+      JSON.stringify({ success: false, error: "Authentication required to submit a proposal" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
 
-  // Rate limiting: use user_id if available, otherwise fall back to email
-  const rateLimitIdentifier = userId || email;
+  // Rate limiting: use user_id
+  const rateLimitIdentifier = userId;
   
   try {
     const rateLimitResult = await checkRateLimit(rateLimitIdentifier);
