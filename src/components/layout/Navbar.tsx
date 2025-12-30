@@ -38,11 +38,14 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <img 
-              src={logo} 
-              alt="Clubless Collective" 
-              className="h-10 md:h-12 w-auto"
-            />
+            <div className="relative">
+              <div className="absolute -inset-1 bg-primary/20 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+              <img 
+                src={logo} 
+                alt="Clubless Collective" 
+                className="relative h-12 md:h-14 w-auto drop-shadow-[0_0_10px_rgba(187,134,252,0.3)]"
+              />
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -85,7 +88,7 @@ export function Navbar() {
               </Button>
             ) : (
               <Button variant="gradient" size="sm" asChild>
-                <Link to="/submit">Join The Collective</Link>
+                <Link to="/submit">Become a Host</Link>
               </Button>
             )}
           </div>
@@ -142,7 +145,7 @@ export function Navbar() {
               ) : (
                 <Button variant="gradient" className="mt-2" asChild>
                   <Link to="/submit" onClick={() => setIsOpen(false)}>
-                    Join The Collective
+                    Become a Host
                   </Link>
                 </Button>
               )}

@@ -9,10 +9,8 @@ import {
   TrendingUp,
   Shield,
   Sparkles,
-  Music,
   Wine,
   MapPin,
-  Zap,
 } from "lucide-react";
 import heroImage from "@/assets/hero-party.jpg";
 
@@ -57,7 +55,7 @@ export default function Index() {
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4 sm:px-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <Button variant="gradient" size="lg" asChild className="glow-primary w-full sm:w-auto">
                 <Link to="/submit">
-                  Join The Collective
+                  Become a Host
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
@@ -71,10 +69,6 @@ export default function Index() {
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 md:w-5 md:h-5 text-accent" />
                 <span className="text-sm font-semibold text-foreground">Seattle</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                <span className="text-sm font-bold text-foreground">150+ Events</span>
               </div>
               <div className="flex items-center gap-2">
                 <Wine className="w-4 h-4 md:w-5 md:h-5 text-neon-gold" />
@@ -154,27 +148,31 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Artist-Controlled Events */}
       <section className="py-12 md:py-20 bg-gradient-card border-y border-border relative overflow-hidden">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-secondary/20 rounded-full blur-[80px] md:blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-48 md:w-80 h-48 md:h-80 bg-primary/20 rounded-full blur-[60px] md:blur-[100px]" />
         </div>
         <div className="container px-4 sm:px-6 relative">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
-            {[
-              { value: "$12K+", label: "Avg. Event Profit", color: "text-primary" },
-              { value: "150+", label: "Events Hosted", color: "text-accent" },
-              { value: "85%", label: "Revenue to You", color: "text-primary" },
-              { value: "48hrs", label: "Event Approval", color: "text-accent" },
-            ].map((stat, index) => (
-              <div key={index} className="text-center p-3 md:p-4">
-                <div className={`font-display text-2xl sm:text-3xl md:text-5xl font-bold ${stat.color} mb-1 md:mb-2`}>
-                  {stat.value}
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-4 md:mb-6">
+              <span className="text-gradient-brand">Artist-Controlled</span> Events
+            </h2>
+            <p className="text-muted-foreground text-base md:text-lg mb-6 md:mb-8">
+              You own your event. You set the vibe, curate the crowd, and keep the profits. 
+              We just handle the boring stuff—licenses, bar, and logistics.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+              {["Your Vision", "Your Crowd", "Your Profit"].map((item, index) => (
+                <div 
+                  key={index} 
+                  className="px-4 py-2 md:px-6 md:py-3 rounded-full bg-primary/10 border border-primary/30"
+                >
+                  <span className="text-sm md:text-base font-semibold text-primary">{item}</span>
                 </div>
-                <div className="text-xs md:text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -275,7 +273,7 @@ export default function Index() {
                   className="border-foreground/30 text-foreground hover:bg-foreground/10 w-full sm:w-auto"
                   asChild
                 >
-                  <Link to="/submit">Submit Event Idea</Link>
+                  <Link to="/submit">Become a Host</Link>
                 </Button>
               </div>
             </div>
