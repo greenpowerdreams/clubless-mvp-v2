@@ -156,7 +156,8 @@ serve(async (req: Request): Promise<Response> => {
               "Authorization": `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: "Clubless Collective <onboarding@resend.dev>",
+              from: "Andrew @ Clubless Collective <andrew@clublesscollective.com>",
+              reply_to: "andrew@clublesscollective.com",
               to: [email],
               subject: "Welcome to Clubless Collective! Access Your Dashboard",
               html: `
