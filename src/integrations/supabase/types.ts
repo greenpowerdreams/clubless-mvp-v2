@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_logs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          metadata: Json | null
+          provider_message_id: string | null
+          status: string
+          template_name: string
+          to_email: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json | null
+          provider_message_id?: string | null
+          status?: string
+          template_name: string
+          to_email: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json | null
+          provider_message_id?: string | null
+          status?: string
+          template_name?: string
+          to_email?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           details: Json | null

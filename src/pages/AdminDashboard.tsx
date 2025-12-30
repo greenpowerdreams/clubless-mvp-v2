@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Zap,
   Calendar,
@@ -37,17 +38,18 @@ import {
   LogOut,
   TrendingUp,
   Ticket,
-  Building2,
   ExternalLink,
   Globe,
-  AlertCircle,
   Eye,
   Send,
   HelpCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { EmailLogsTab } from "@/components/admin/EmailLogsTab";
+import { ErrorLogsTab } from "@/components/admin/ErrorLogsTab";
 
 interface ProfitSummary {
   attendance?: number;
@@ -78,6 +80,7 @@ interface Proposal {
   created_at: string;
   approved_at: string | null;
   published_at: string | null;
+  completed_at: string | null;
   eventbrite_url: string | null;
   eventbrite_status: string | null;
 }
@@ -102,6 +105,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const { user, isAdmin, isLoading: authLoading, signOut } = useAdminAuth();
   
+  const [activeTab, setActiveTab] = useState("proposals");
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -214,6 +218,9 @@ export default function AdminDashboard() {
       if (pendingStatus === "published") {
         updateData.published_at = new Date().toISOString();
       }
+      if (pendingStatus === "completed") {
+        updateData.completed_at = new Date().toISOString();
+      }
 
       const { error } = await supabase
         .from("event_proposals")
@@ -222,6 +229,23 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
+      // Send status update email
+      try {
+        await supabase.functions.invoke("send-status-email", {
+          body: {
+            to: selectedProposal.submitter_email,
+            submitter_name: selectedProposal.submitter_name,
+            status: pendingStatus,
+            status_notes: statusNotes.trim() || null,
+            city: selectedProposal.city,
+            event_date: selectedProposal.preferred_event_date,
+          },
+        });
+      } catch (emailError) {
+        console.error("Failed to send status email:", emailError);
+        // Don't fail the status update if email fails
+      }
+
       // Update local state
       const updatedProposal = {
         ...selectedProposal,
@@ -229,6 +253,7 @@ export default function AdminDashboard() {
         status_notes: statusNotes.trim() || null,
         ...(pendingStatus === "approved" && { approved_at: new Date().toISOString() }),
         ...(pendingStatus === "published" && { published_at: new Date().toISOString() }),
+        ...(pendingStatus === "completed" && { completed_at: new Date().toISOString() }),
       };
 
       setProposals((prev) =>
@@ -400,6 +425,7 @@ export default function AdminDashboard() {
               {pendingStatus === "needs_info" && "The user will be prompted to check their email for more details."}
               {pendingStatus === "approved" && "This will set the approved_at timestamp."}
               {pendingStatus === "rejected" && "This will mark the proposal as rejected."}
+              {pendingStatus === "completed" && "This will mark the event as completed."}
             </DialogDescription>
           </DialogHeader>
           
@@ -458,355 +484,379 @@ export default function AdminDashboard() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="font-display text-3xl font-bold mb-2">
-              Event Proposals
-            </h1>
-            <p className="text-muted-foreground">
-              Review and manage incoming event proposals.
-            </p>
-          </div>
-          
-          <Button onClick={exportToCSV} variant="outline" disabled={sortedProposals.length === 0}>
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
-        </div>
-
-        {/* Filters & Sort */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
-            <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at">Submit Date</SelectItem>
-                <SelectItem value="preferred_event_date">Event Date</SelectItem>
-                <SelectItem value="city">City</SelectItem>
-                <SelectItem value="profit">Projected Profit</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSortDirection(d => d === "asc" ? "desc" : "asc")}
-            >
-              <ArrowUpDown className="w-4 h-4" />
-            </Button>
+        {/* Tab Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <TabsList className="grid w-full sm:w-auto grid-cols-3">
+              <TabsTrigger value="proposals" className="gap-2">
+                <Users className="w-4 h-4" />
+                Proposals
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="gap-2">
+                <Mail className="w-4 h-4" />
+                Email Logs
+              </TabsTrigger>
+              <TabsTrigger value="errors" className="gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Error Logs
+              </TabsTrigger>
+            </TabsList>
+            
+            {activeTab === "proposals" && (
+              <Button onClick={exportToCSV} variant="outline" disabled={sortedProposals.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Status:</span>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status.value} value={status.value}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Proposals Tab */}
+          <TabsContent value="proposals" className="space-y-6">
+            {/* Filters & Sort */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sort by:</span>
+                <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Submit Date</SelectItem>
+                    <SelectItem value="preferred_event_date">Event Date</SelectItem>
+                    <SelectItem value="city">City</SelectItem>
+                    <SelectItem value="profit">Projected Profit</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSortDirection(d => d === "asc" ? "desc" : "asc")}
+                >
+                  <ArrowUpDown className="w-4 h-4" />
+                </Button>
+              </div>
 
-          <div className="text-sm text-muted-foreground ml-auto">
-            {sortedProposals.length} proposal{sortedProposals.length !== 1 ? "s" : ""}
-          </div>
-        </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {STATUS_OPTIONS.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-        {sortedProposals.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-              <Clock className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-display text-xl font-semibold mb-2">
-              No Proposals Found
-            </h3>
-            <p className="text-muted-foreground">
-              {statusFilter !== "all" 
-                ? `No ${statusFilter} proposals yet.`
-                : "Event proposals will appear here when submitted."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Proposals List */}
-            <div className="lg:col-span-1 space-y-4">
-              <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
-                {sortedProposals.map((proposal) => (
-                  <button
-                    key={proposal.id}
-                    onClick={() => setSelectedProposal(proposal)}
-                    className={`w-full text-left glass rounded-xl p-4 transition-all hover:border-primary/40 ${
-                      selectedProposal?.id === proposal.id
-                        ? "border-primary ring-1 ring-primary/30"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold truncate">{proposal.submitter_name}</h3>
-                      {getStatusBadge(proposal.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2 truncate">
-                      {proposal.city}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(proposal.preferred_event_date).toLocaleDateString()}
-                      </span>
-                      {proposal.projected_profit && (
-                        <span className="flex items-center gap-1 text-primary">
-                          <DollarSign className="w-3 h-3" />
-                          {formatCurrency(proposal.projected_profit)}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+              <div className="text-sm text-muted-foreground ml-auto">
+                {sortedProposals.length} proposal{sortedProposals.length !== 1 ? "s" : ""}
               </div>
             </div>
 
-            {/* Detail View */}
-            <div className="lg:col-span-2">
-              {selectedProposal ? (
-                <div className="glass rounded-2xl p-8">
-                  <div className="flex items-start justify-between mb-6">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="font-display text-2xl font-bold">
-                          {selectedProposal.submitter_name}
-                        </h2>
-                        {getStatusBadge(selectedProposal.status)}
-                      </div>
-                      <p className="text-muted-foreground">
-                        Submitted{" "}
-                        {new Date(selectedProposal.created_at).toLocaleDateString()}{" "}
-                        at{" "}
-                        {new Date(selectedProposal.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Status Notes Display */}
-                  {selectedProposal.status_notes && (
-                    <div className="mb-6 p-4 bg-muted/50 rounded-xl border border-border">
-                      <p className="text-sm font-medium mb-1">Status Notes:</p>
-                      <p className="text-sm text-muted-foreground">{selectedProposal.status_notes}</p>
-                    </div>
-                  )}
-
-                  {/* Status Actions */}
-                  <div className="mb-6">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Change Status</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {STATUS_OPTIONS.map((status) => (
-                        <Button
-                          key={status.value}
-                          size="sm"
-                          variant={selectedProposal.status === status.value ? "default" : "outline"}
-                          disabled={selectedProposal.status === status.value}
-                          onClick={() => openStatusDialog(status.value)}
-                          className="text-xs"
-                        >
-                          {status.value === "under_review" && <Eye className="w-3 h-3 mr-1" />}
-                          {status.value === "needs_info" && <HelpCircle className="w-3 h-3 mr-1" />}
-                          {status.value === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
-                          {status.value === "published" && <Send className="w-3 h-3 mr-1" />}
-                          {status.value === "completed" && <CheckCircle className="w-3 h-3 mr-1" />}
-                          {status.value === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
-                          {status.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Contact & Event Info */}
-                  <div className="grid sm:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-secondary/50 rounded-xl p-4">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                        Contact Information
-                      </h3>
-                      <div className="space-y-2">
-                        <p className="font-medium">{selectedProposal.submitter_name}</p>
-                        <p className="flex items-center gap-2 text-sm">
-                          <Mail className="w-4 h-4 text-primary" />
-                          {selectedProposal.submitter_email}
+            {sortedProposals.length === 0 ? (
+              <div className="glass rounded-2xl p-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-display text-xl font-semibold mb-2">
+                  No Proposals Found
+                </h3>
+                <p className="text-muted-foreground">
+                  {statusFilter !== "all" 
+                    ? `No ${statusFilter} proposals yet.`
+                    : "Event proposals will appear here when submitted."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Proposals List */}
+                <div className="lg:col-span-1 space-y-4">
+                  <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
+                    {sortedProposals.map((proposal) => (
+                      <button
+                        key={proposal.id}
+                        onClick={() => setSelectedProposal(proposal)}
+                        className={`w-full text-left glass rounded-xl p-4 transition-all hover:border-primary/40 ${
+                          selectedProposal?.id === proposal.id
+                            ? "border-primary ring-1 ring-primary/30"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold truncate">{proposal.submitter_name}</h3>
+                          {getStatusBadge(proposal.status)}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 truncate">
+                          {proposal.city}
                         </p>
-                        {selectedProposal.instagram_handle && (
-                          <p className="flex items-center gap-2 text-sm">
-                            <Instagram className="w-4 h-4 text-primary" />
-                            {selectedProposal.instagram_handle}
-                          </p>
-                        )}
-                        <p className="flex items-center gap-2 text-sm">
-                          <MapPin className="w-4 h-4 text-primary" />
-                          {selectedProposal.city}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="bg-secondary/50 rounded-xl p-4">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                        Event Details
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        <p className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-primary" />
-                          {new Date(selectedProposal.preferred_event_date).toLocaleDateString(
-                            "en-US",
-                            { weekday: "long", year: "numeric", month: "long", day: "numeric" }
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(proposal.preferred_event_date).toLocaleDateString()}
+                          </span>
+                          {proposal.projected_profit && (
+                            <span className="flex items-center gap-1 text-primary">
+                              <DollarSign className="w-3 h-3" />
+                              {formatCurrency(proposal.projected_profit)}
+                            </span>
                           )}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-primary" />
-                          {formatFeeModel(selectedProposal.fee_model)}
-                        </p>
-                      </div>
-                    </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Profit Summary */}
-                  {(selectedProposal.projected_revenue || selectedProposal.full_calculator_json) && (
-                    <div className="mb-8">
-                      <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-primary" />
-                        Profit Projection
-                      </h3>
-                      
-                      <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="bg-secondary/50 rounded-xl p-4">
-                          <p className="text-sm text-muted-foreground mb-1">Revenue</p>
-                          <p className="text-xl font-bold">
-                            {formatCurrency(selectedProposal.projected_revenue)}
-                          </p>
-                        </div>
-                        <div className="bg-secondary/50 rounded-xl p-4">
-                          <p className="text-sm text-muted-foreground mb-1">Costs</p>
-                          <p className="text-xl font-bold">
-                            {formatCurrency(selectedProposal.projected_costs)}
-                          </p>
-                        </div>
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-                          <p className="text-sm text-green-400 mb-1">Take-Home</p>
-                          <p className="text-xl font-bold text-green-400">
-                            {formatCurrency(selectedProposal.projected_profit)}
+                {/* Detail View */}
+                <div className="lg:col-span-2">
+                  {selectedProposal ? (
+                    <div className="glass rounded-2xl p-8">
+                      <div className="flex items-start justify-between mb-6">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h2 className="font-display text-2xl font-bold">
+                              {selectedProposal.submitter_name}
+                            </h2>
+                            {getStatusBadge(selectedProposal.status)}
+                          </div>
+                          <p className="text-muted-foreground">
+                            Submitted{" "}
+                            {new Date(selectedProposal.created_at).toLocaleDateString()}{" "}
+                            at{" "}
+                            {new Date(selectedProposal.created_at).toLocaleTimeString()}
                           </p>
                         </div>
                       </div>
 
-                      {selectedProposal.full_calculator_json && (
-                        <div className="mt-4 p-4 bg-muted/30 rounded-xl">
-                          <p className="text-sm font-medium mb-2">Calculator Details</p>
-                          <div className="grid sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            {selectedProposal.full_calculator_json.attendance && (
-                              <p className="flex items-center gap-2">
-                                <Users className="w-4 h-4" />
-                                Attendance: {selectedProposal.full_calculator_json.attendance}
-                              </p>
-                            )}
-                            {selectedProposal.full_calculator_json.ticketPrice && (
-                              <p className="flex items-center gap-2">
-                                <Ticket className="w-4 h-4" />
-                                Ticket: {formatCurrency(selectedProposal.full_calculator_json.ticketPrice)}
-                              </p>
-                            )}
-                          </div>
+                      {/* Status Notes Display */}
+                      {selectedProposal.status_notes && (
+                        <div className="mb-6 p-4 bg-muted/50 rounded-xl border border-border">
+                          <p className="text-sm font-medium mb-1">Status Notes:</p>
+                          <p className="text-sm text-muted-foreground">{selectedProposal.status_notes}</p>
                         </div>
                       )}
-                    </div>
-                  )}
 
-                  {/* Eventbrite Section - Only for approved/published proposals */}
-                  {(selectedProposal.status === "approved" || selectedProposal.status === "published") && (
-                    <div className="mb-8">
-                      <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-primary" />
-                        Eventbrite Publishing
-                      </h3>
-                      
-                      {selectedProposal.eventbrite_status === 'published' && selectedProposal.eventbrite_url ? (
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-green-400 mb-1">Published on Eventbrite</p>
-                              <p className="text-xs text-muted-foreground truncate max-w-md">
-                                {selectedProposal.eventbrite_url}
+                      {/* Status Actions */}
+                      <div className="mb-6">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-3">Change Status</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {STATUS_OPTIONS.map((status) => (
+                            <Button
+                              key={status.value}
+                              size="sm"
+                              variant={selectedProposal.status === status.value ? "default" : "outline"}
+                              disabled={selectedProposal.status === status.value}
+                              onClick={() => openStatusDialog(status.value)}
+                              className="text-xs"
+                            >
+                              {status.value === "under_review" && <Eye className="w-3 h-3 mr-1" />}
+                              {status.value === "needs_info" && <HelpCircle className="w-3 h-3 mr-1" />}
+                              {status.value === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
+                              {status.value === "published" && <Send className="w-3 h-3 mr-1" />}
+                              {status.value === "completed" && <CheckCircle className="w-3 h-3 mr-1" />}
+                              {status.value === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
+                              {status.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Contact & Event Info */}
+                      <div className="grid sm:grid-cols-2 gap-6 mb-8">
+                        <div className="bg-secondary/50 rounded-xl p-4">
+                          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                            Contact Information
+                          </h3>
+                          <div className="space-y-2">
+                            <p className="font-medium">{selectedProposal.submitter_name}</p>
+                            <p className="flex items-center gap-2 text-sm">
+                              <Mail className="w-4 h-4 text-primary" />
+                              {selectedProposal.submitter_email}
+                            </p>
+                            {selectedProposal.instagram_handle && (
+                              <p className="flex items-center gap-2 text-sm">
+                                <Instagram className="w-4 h-4 text-primary" />
+                                {selectedProposal.instagram_handle}
+                              </p>
+                            )}
+                            <p className="flex items-center gap-2 text-sm">
+                              <MapPin className="w-4 h-4 text-primary" />
+                              {selectedProposal.city}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-secondary/50 rounded-xl p-4">
+                          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                            Event Details
+                          </h3>
+                          <div className="space-y-2 text-sm">
+                            <p className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-primary" />
+                              {new Date(selectedProposal.preferred_event_date).toLocaleDateString(
+                                "en-US",
+                                { weekday: "long", year: "numeric", month: "long", day: "numeric" }
+                              )}
+                            </p>
+                            <p className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-primary" />
+                              {formatFeeModel(selectedProposal.fee_model)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Profit Summary */}
+                      {(selectedProposal.projected_revenue || selectedProposal.full_calculator_json) && (
+                        <div className="mb-8">
+                          <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-primary" />
+                            Profit Projection
+                          </h3>
+                          
+                          <div className="grid sm:grid-cols-3 gap-4">
+                            <div className="bg-secondary/50 rounded-xl p-4">
+                              <p className="text-sm text-muted-foreground mb-1">Revenue</p>
+                              <p className="text-xl font-bold">
+                                {formatCurrency(selectedProposal.projected_revenue)}
                               </p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-green-500/30 text-green-400 hover:bg-green-500/10"
-                              onClick={() => window.open(selectedProposal.eventbrite_url!, '_blank')}
-                            >
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              Open
-                            </Button>
+                            <div className="bg-secondary/50 rounded-xl p-4">
+                              <p className="text-sm text-muted-foreground mb-1">Costs</p>
+                              <p className="text-xl font-bold">
+                                {formatCurrency(selectedProposal.projected_costs)}
+                              </p>
+                            </div>
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                              <p className="text-sm text-green-400 mb-1">Take-Home</p>
+                              <p className="text-xl font-bold text-green-400">
+                                {formatCurrency(selectedProposal.projected_profit)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            Enter the Eventbrite URL after creating the event manually.
-                          </p>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="https://eventbrite.com/e/your-event..."
-                              value={eventbriteUrlInput}
-                              onChange={(e) => setEventbriteUrlInput(e.target.value)}
-                              className="flex-1"
-                            />
-                            <Button
-                              onClick={markAsPublished}
-                              disabled={isPublishing || !eventbriteUrlInput.trim()}
-                            >
-                              {isPublishing ? (
-                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                              )}
-                              Publish
-                            </Button>
-                          </div>
+
+                          {selectedProposal.full_calculator_json && (
+                            <div className="mt-4 p-4 bg-muted/30 rounded-xl">
+                              <p className="text-sm font-medium mb-2">Calculator Details</p>
+                              <div className="grid sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                {selectedProposal.full_calculator_json.attendance && (
+                                  <p className="flex items-center gap-2">
+                                    <Users className="w-4 h-4" />
+                                    Attendance: {selectedProposal.full_calculator_json.attendance}
+                                  </p>
+                                )}
+                                {selectedProposal.full_calculator_json.ticketPrice && (
+                                  <p className="flex items-center gap-2">
+                                    <Ticket className="w-4 h-4" />
+                                    Ticket: {formatCurrency(selectedProposal.full_calculator_json.ticketPrice)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
+
+                      {/* Eventbrite Section - Only for approved/published proposals */}
+                      {(selectedProposal.status === "approved" || selectedProposal.status === "published") && (
+                        <div className="mb-8">
+                          <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-primary" />
+                            Eventbrite Publishing
+                          </h3>
+                          
+                          {selectedProposal.eventbrite_status === 'published' && selectedProposal.eventbrite_url ? (
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-green-400 mb-1">Published on Eventbrite</p>
+                                  <p className="text-xs text-muted-foreground truncate max-w-md">
+                                    {selectedProposal.eventbrite_url}
+                                  </p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                  onClick={() => window.open(selectedProposal.eventbrite_url!, '_blank')}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-1" />
+                                  Open
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
+                              <p className="text-sm text-muted-foreground">
+                                Enter the Eventbrite URL after creating the event manually.
+                              </p>
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="https://eventbrite.com/e/your-event..."
+                                  value={eventbriteUrlInput}
+                                  onChange={(e) => setEventbriteUrlInput(e.target.value)}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  onClick={markAsPublished}
+                                  disabled={isPublishing || !eventbriteUrlInput.trim()}
+                                >
+                                  {isPublishing ? (
+                                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                  )}
+                                  Publish
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Event Concept */}
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                          Event Concept
+                        </h3>
+                        <p className="text-foreground leading-relaxed whitespace-pre-wrap bg-secondary/30 rounded-xl p-4">
+                          {selectedProposal.event_concept}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="glass rounded-2xl p-12 text-center">
+                      <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="font-display text-xl font-semibold mb-2">
+                        Select a Proposal
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Click on a proposal from the list to view details and take
+                        action.
+                      </p>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+          </TabsContent>
 
-                  {/* Event Concept */}
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                      Event Concept
-                    </h3>
-                    <p className="text-foreground leading-relaxed whitespace-pre-wrap bg-secondary/30 rounded-xl p-4">
-                      {selectedProposal.event_concept}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="glass rounded-2xl p-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-                    <Clock className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-display text-xl font-semibold mb-2">
-                    Select a Proposal
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Click on a proposal from the list to view details and take
-                    action.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+          {/* Email Logs Tab */}
+          <TabsContent value="emails">
+            <EmailLogsTab />
+          </TabsContent>
+
+          {/* Error Logs Tab */}
+          <TabsContent value="errors">
+            <ErrorLogsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
