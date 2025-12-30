@@ -20,30 +20,39 @@ export type Database = {
           error: string | null
           id: string
           metadata: Json | null
+          open_count: number | null
+          opened_at: string | null
           provider_message_id: string | null
           status: string
           template_name: string
           to_email: string
+          tracking_id: string | null
         }
         Insert: {
           created_at?: string
           error?: string | null
           id?: string
           metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
           provider_message_id?: string | null
           status?: string
           template_name: string
           to_email: string
+          tracking_id?: string | null
         }
         Update: {
           created_at?: string
           error?: string | null
           id?: string
           metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
           provider_message_id?: string | null
           status?: string
           template_name?: string
           to_email?: string
+          tracking_id?: string | null
         }
         Relationships: []
       }
