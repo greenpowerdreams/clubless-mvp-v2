@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { 
@@ -12,7 +13,12 @@ import {
   TrendingUp,
   ChevronRight,
   LogOut,
-  Sparkles
+  Sparkles,
+  Star,
+  Zap,
+  Shield,
+  Clock,
+  DollarSign
 } from "lucide-react";
 
 interface EventProposal {
@@ -25,11 +31,46 @@ interface EventProposal {
   submitter_name: string;
 }
 
+interface UserLevel {
+  current_level: number;
+  level_name: string;
+  service_fee_percent: number;
+  perks: Record<string, unknown>;
+  next_level: number | null;
+  next_level_name: string | null;
+  events_to_next_level: number | null;
+}
+
+interface UserStats {
+  lifetime_events_completed: number;
+  lifetime_events_published: number;
+  lifetime_profit_generated: number;
+  lifetime_attendance: number;
+}
+
+const LEVEL_COLORS: Record<number, { text: string; bg: string; icon: string }> = {
+  1: { text: "text-gray-400", bg: "bg-gray-500/20", icon: "text-gray-400" },
+  2: { text: "text-blue-400", bg: "bg-blue-500/20", icon: "text-blue-400" },
+  3: { text: "text-purple-400", bg: "bg-purple-500/20", icon: "text-purple-400" },
+  4: { text: "text-yellow-400", bg: "bg-yellow-500/20", icon: "text-yellow-400" },
+};
+
+const PERK_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+  service_fee_percent: { label: "Service Fee", icon: <DollarSign className="w-4 h-4" /> },
+  priority_support: { label: "Priority Support", icon: <Shield className="w-4 h-4" /> },
+  early_access_slots: { label: "Early Access Slots", icon: <Clock className="w-4 h-4" /> },
+  priority_approval: { label: "Priority Approval", icon: <Zap className="w-4 h-4" /> },
+  best_dates_priority: { label: "Best Dates Priority", icon: <Calendar className="w-4 h-4" /> },
+  dedicated_rep: { label: "Dedicated Rep", icon: <Star className="w-4 h-4" /> },
+};
+
 export default function Portal() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventProposal[]>([]);
+  const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -47,7 +88,7 @@ export default function Portal() {
         navigate("/portal/login");
       } else {
         setUser(session.user);
-        fetchEvents(session.user.id);
+        fetchUserData(session.user.id);
       }
       setLoading(false);
     });
@@ -55,43 +96,41 @@ export default function Portal() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchEvents = async (userId: string) => {
-    const { data, error } = await supabase
+  const fetchUserData = async (userId: string) => {
+    // Fetch events
+    const { data: eventsData } = await supabase
       .from("event_proposals")
       .select("id, status, city, preferred_event_date, projected_profit, created_at, submitter_name")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching events:", error);
-    } else {
-      setEvents(data || []);
+    if (eventsData) {
+      setEvents(eventsData);
+    }
+
+    // Fetch user level
+    const { data: levelData } = await supabase
+      .rpc("get_user_level", { p_user_id: userId });
+
+    if (levelData && levelData.length > 0) {
+      setUserLevel(levelData[0] as UserLevel);
+    }
+
+    // Fetch user stats
+    const { data: statsData } = await supabase
+      .from("user_stats")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (statsData) {
+      setUserStats(statsData as UserStats);
     }
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
-  };
-
-  const getUserLevel = () => {
-    const completedEvents = events.filter(e => e.status === "completed").length;
-    if (completedEvents >= 10) return { name: "Platinum Host", color: "text-purple-400" };
-    if (completedEvents >= 5) return { name: "Gold Host", color: "text-yellow-400" };
-    if (completedEvents >= 2) return { name: "Silver Host", color: "text-gray-300" };
-    if (completedEvents >= 1) return { name: "Bronze Host", color: "text-amber-600" };
-    return { name: "New Host", color: "text-muted-foreground" };
-  };
-
-  const getCurrentPerk = () => {
-    const level = getUserLevel();
-    switch (level.name) {
-      case "Platinum Host": return "VIP venue access + priority booking + 20% fee reduction";
-      case "Gold Host": return "Priority venue booking + 10% fee reduction";
-      case "Silver Host": return "Early access to premium venues";
-      case "Bronze Host": return "Access to community events";
-      default: return "Submit your first event to unlock perks!";
-    }
   };
 
   const formatCurrency = (amount: number | null) => {
@@ -120,6 +159,25 @@ export default function Portal() {
     return status.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   };
 
+  const getLevelProgress = () => {
+    if (!userLevel || userLevel.next_level === null || userLevel.events_to_next_level === null) {
+      return 100; // Max level
+    }
+    
+    const completedEvents = userStats?.lifetime_events_completed || 0;
+    const eventsNeeded = completedEvents + userLevel.events_to_next_level;
+    
+    // Calculate progress based on level thresholds
+    const levelThresholds = [0, 2, 5, 10];
+    const currentThreshold = levelThresholds[userLevel.current_level - 1] || 0;
+    const nextThreshold = levelThresholds[userLevel.current_level] || currentThreshold;
+    
+    if (nextThreshold === currentThreshold) return 100;
+    
+    const progress = ((completedEvents - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
+    return Math.min(100, Math.max(0, progress));
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -130,7 +188,7 @@ export default function Portal() {
     );
   }
 
-  const level = getUserLevel();
+  const levelColors = userLevel ? LEVEL_COLORS[userLevel.current_level] || LEVEL_COLORS[1] : LEVEL_COLORS[1];
 
   return (
     <Layout>
@@ -153,36 +211,109 @@ export default function Portal() {
               </Button>
             </div>
 
-            {/* Level & Perk Cards */}
+            {/* Level & Stats Cards */}
             <div className="grid md:grid-cols-2 gap-6 mb-10">
               {/* Your Level */}
               <div className="glass rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <Crown className={`w-6 h-6 ${level.color}`} />
+                  <div className={`w-12 h-12 rounded-xl ${levelColors.bg} flex items-center justify-center`}>
+                    <Crown className={`w-6 h-6 ${levelColors.icon}`} />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Your Level</p>
-                    <p className={`text-xl font-bold ${level.color}`}>{level.name}</p>
+                    <p className={`text-xl font-bold ${levelColors.text}`}>
+                      {userLevel?.level_name || "Starter"}
+                    </p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {events.filter(e => e.status === "completed").length} completed events
-                </p>
+                
+                {/* Progress to next level */}
+                {userLevel && userLevel.next_level !== null && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Progress to {userLevel.next_level_name}
+                      </span>
+                      <span className="font-medium">
+                        {userLevel.events_to_next_level} events to go
+                      </span>
+                    </div>
+                    <Progress value={getLevelProgress()} className="h-2" />
+                  </div>
+                )}
+                
+                {userLevel && userLevel.next_level === null && (
+                  <p className="text-sm text-muted-foreground">
+                    You've reached the highest level!
+                  </p>
+                )}
+                
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-xs text-muted-foreground mb-2">Your Stats</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Completed: </span>
+                      <span className="font-medium">{userStats?.lifetime_events_completed || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Published: </span>
+                      <span className="font-medium">{userStats?.lifetime_events_published || 0}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Total Profit: </span>
+                      <span className="font-medium text-green-400">
+                        {formatCurrency(userStats?.lifetime_profit_generated || 0)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Current Perk */}
+              {/* Current Perks */}
               <div className="glass rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
                     <Gift className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Your Current Perk</p>
+                    <p className="text-sm text-muted-foreground">Your Perks</p>
                     <p className="text-lg font-semibold">Active Benefits</p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{getCurrentPerk()}</p>
+                
+                <div className="space-y-3">
+                  {/* Service Fee Highlight */}
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-green-400" />
+                      <span className="text-sm font-medium text-green-400">
+                        {userLevel ? `${userLevel.service_fee_percent}% Service Fee` : "15% Service Fee"}
+                      </span>
+                      {userLevel && userLevel.service_fee_percent < 15 && (
+                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
+                          {15 - userLevel.service_fee_percent}% saved
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Other Perks */}
+                  {userLevel?.perks && Object.entries(userLevel.perks).map(([key, value]) => {
+                    if (key === "service_fee_percent") return null;
+                    if (value === false) return null;
+                    
+                    const perkInfo = PERK_LABELS[key];
+                    if (!perkInfo) return null;
+                    
+                    return (
+                      <div key={key} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {perkInfo.icon}
+                        <span>{perkInfo.label}</span>
+                        <span className="text-green-400">✓</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

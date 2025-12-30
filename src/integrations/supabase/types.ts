@@ -89,6 +89,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_levels: {
+        Row: {
+          level: number
+          name: string
+          perks_json: Json
+          requirements_json: Json
+        }
+        Insert: {
+          level: number
+          name: string
+          perks_json: Json
+          requirements_json: Json
+        }
+        Update: {
+          level?: number
+          name?: string
+          perks_json?: Json
+          requirements_json?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -110,6 +131,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_stats: {
+        Row: {
+          lifetime_attendance: number
+          lifetime_events_completed: number
+          lifetime_events_published: number
+          lifetime_profit_generated: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          lifetime_attendance?: number
+          lifetime_events_completed?: number
+          lifetime_events_published?: number
+          lifetime_profit_generated?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          lifetime_attendance?: number
+          lifetime_events_completed?: number
+          lifetime_events_published?: number
+          lifetime_profit_generated?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -125,6 +173,18 @@ export type Database = {
           id: string
           preferred_date: string
           status: string
+        }[]
+      }
+      get_user_level: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_level: number
+          events_to_next_level: number
+          level_name: string
+          next_level: number
+          next_level_name: string
+          perks: Json
+          service_fee_percent: number
         }[]
       }
       has_role: {
