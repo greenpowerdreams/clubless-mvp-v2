@@ -7,13 +7,14 @@ import {
   ArrowLeft, 
   Calendar, 
   MapPin, 
-  DollarSign,
   TrendingUp,
   FileText,
   Clock,
   CheckCircle2,
   Circle,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  HelpCircle
 } from "lucide-react";
 
 interface EventProposal {
@@ -93,6 +94,10 @@ export default function PortalEventDetail() {
   };
 
   const getStatusIndex = (status: string) => {
+    // Handle special statuses
+    if (status === "needs_info") return 1; // Same position as under_review
+    if (status === "rejected") return -1; // Special case
+    
     const idx = STATUS_TIMELINE.findIndex(s => s.key === status);
     return idx >= 0 ? idx : 0;
   };
@@ -100,6 +105,9 @@ export default function PortalEventDetail() {
   const getStatusIcon = (index: number, currentIndex: number, status: string) => {
     if (status === "rejected") {
       return <AlertCircle className="w-5 h-5 text-red-400" />;
+    }
+    if (status === "needs_info" && index === 1) {
+      return <HelpCircle className="w-5 h-5 text-orange-400" />;
     }
     if (index < currentIndex) {
       return <CheckCircle2 className="w-5 h-5 text-green-400" />;
@@ -175,6 +183,28 @@ export default function PortalEventDetail() {
               </div>
             </div>
 
+            {/* Needs Info Callout */}
+            {event.status === "needs_info" && (
+              <div className="mb-8 p-6 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-6 h-6 text-orange-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-orange-400 mb-1">Action Required</h3>
+                    <p className="text-muted-foreground mb-2">
+                      We need additional information to proceed with your proposal. Please check your email and reply with the requested details.
+                    </p>
+                    {event.status_notes && (
+                      <p className="text-sm text-foreground bg-orange-500/10 rounded-lg p-3 mt-3">
+                        <strong>Note:</strong> {event.status_notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Status Timeline */}
             <div className="glass rounded-2xl p-6 md:p-8 mb-8">
               <h2 className="font-display text-lg font-semibold mb-6">Status Timeline</h2>
@@ -202,38 +232,54 @@ export default function PortalEventDetail() {
                   />
                   
                   <div className="space-y-6">
-                    {STATUS_TIMELINE.map((step, index) => (
-                      <div key={step.key} className="flex items-start gap-4">
-                        <div className="relative z-10 w-10 h-10 rounded-full bg-background border-2 border-muted flex items-center justify-center">
-                          {getStatusIcon(index, currentStatusIndex, event.status)}
+                    {STATUS_TIMELINE.map((step, index) => {
+                      // Show "Needs Info" instead of "Under Review" if that's the current status
+                      const isNeedsInfo = event.status === "needs_info" && step.key === "under_review";
+                      const displayLabel = isNeedsInfo ? "Needs Info" : step.label;
+                      
+                      return (
+                        <div key={step.key} className="flex items-start gap-4">
+                          <div className={`relative z-10 w-10 h-10 rounded-full bg-background border-2 flex items-center justify-center ${
+                            isNeedsInfo ? "border-orange-500" : "border-muted"
+                          }`}>
+                            {getStatusIcon(index, currentStatusIndex, event.status)}
+                          </div>
+                          <div className="flex-1 pt-2">
+                            <p className={`font-medium ${
+                              isNeedsInfo ? "text-orange-400" :
+                              index <= currentStatusIndex ? "text-foreground" : "text-muted-foreground"
+                            }`}>
+                              {displayLabel}
+                            </p>
+                            {isNeedsInfo && event.status_notes && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {event.status_notes}
+                              </p>
+                            )}
+                            {index === currentStatusIndex && !isNeedsInfo && event.status_notes && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {event.status_notes}
+                              </p>
+                            )}
+                            {step.key === "submitted" && (
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(event.created_at).toLocaleDateString()}
+                              </p>
+                            )}
+                            {step.key === "approved" && event.approved_at && (
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(event.approved_at).toLocaleDateString()}
+                              </p>
+                            )}
+                            {step.key === "published" && event.published_at && (
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(event.published_at).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 pt-2">
-                          <p className={`font-medium ${index <= currentStatusIndex ? "text-foreground" : "text-muted-foreground"}`}>
-                            {step.label}
-                          </p>
-                          {index === currentStatusIndex && event.status_notes && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {event.status_notes}
-                            </p>
-                          )}
-                          {step.key === "submitted" && (
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(event.created_at).toLocaleDateString()}
-                            </p>
-                          )}
-                          {step.key === "approved" && event.approved_at && (
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(event.approved_at).toLocaleDateString()}
-                            </p>
-                          )}
-                          {step.key === "published" && event.published_at && (
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(event.published_at).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
