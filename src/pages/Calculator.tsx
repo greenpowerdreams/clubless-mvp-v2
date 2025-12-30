@@ -933,7 +933,7 @@ export default function Calculator() {
                         <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Markup covers coordination/overhead. Applied to staffing + catering only (not venue rental).</p>
+                        <p>This markup covers the cost of staff coordination, scheduling, and operational overhead. Applied to staffing + catering only (not venue rental).</p>
                       </TooltipContent>
                     </Tooltip>
                   </h2>
