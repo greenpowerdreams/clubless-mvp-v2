@@ -16,52 +16,76 @@ export type Database = {
     Tables: {
       event_proposals: {
         Row: {
+          approved_at: string | null
           city: string
           created_at: string
-          email: string
           event_concept: string
           eventbrite_status: string | null
           eventbrite_url: string | null
           fee_model: string
+          full_calculator_json: Json | null
           id: string
           instagram_handle: string | null
-          name: string
-          preferred_date: string
-          profit_summary: Json | null
+          preferred_event_date: string
+          projected_costs: number | null
+          projected_profit: number | null
+          projected_revenue: number | null
+          published_at: string | null
           status: string
+          status_notes: string | null
+          status_updated_at: string | null
+          submitter_email: string
+          submitter_name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
+          approved_at?: string | null
           city: string
           created_at?: string
-          email: string
           event_concept: string
           eventbrite_status?: string | null
           eventbrite_url?: string | null
           fee_model: string
+          full_calculator_json?: Json | null
           id?: string
           instagram_handle?: string | null
-          name: string
-          preferred_date: string
-          profit_summary?: Json | null
+          preferred_event_date: string
+          projected_costs?: number | null
+          projected_profit?: number | null
+          projected_revenue?: number | null
+          published_at?: string | null
           status?: string
+          status_notes?: string | null
+          status_updated_at?: string | null
+          submitter_email: string
+          submitter_name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          approved_at?: string | null
           city?: string
           created_at?: string
-          email?: string
           event_concept?: string
           eventbrite_status?: string | null
           eventbrite_url?: string | null
           fee_model?: string
+          full_calculator_json?: Json | null
           id?: string
           instagram_handle?: string | null
-          name?: string
-          preferred_date?: string
-          profit_summary?: Json | null
+          preferred_event_date?: string
+          projected_costs?: number | null
+          projected_profit?: number | null
+          projected_revenue?: number | null
+          published_at?: string | null
           status?: string
+          status_notes?: string | null
+          status_updated_at?: string | null
+          submitter_email?: string
+          submitter_name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -10,6 +10,9 @@ import SubmitEvent from "./pages/SubmitEvent";
 import ProposalStatus from "./pages/ProposalStatus";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAuth from "./pages/AdminAuth";
+import Portal from "./pages/Portal";
+import PortalLogin from "./pages/PortalLogin";
+import PortalEventDetail from "./pages/PortalEventDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +31,9 @@ const App = () => (
           <Route path="/status" element={<ProposalStatus />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/login" element={<AdminAuth />} />
+          <Route path="/portal" element={<Portal />} />
+          <Route path="/portal/login" element={<PortalLogin />} />
+          <Route path="/portal/events/:id" element={<PortalEventDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
