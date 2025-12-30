@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -337,14 +338,30 @@ export default function Calculator() {
     <Layout>
       <section className="pt-12 pb-20 md:pt-20 md:pb-32">
         <div className="container px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+          <div className="max-w-3xl mx-auto text-center mb-8">
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
               Event Profit <span className="text-gradient">Calculator</span>
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground mb-6">
               Model your event economics and see exactly how much you could take home.
-              Adjust the inputs to match your event vision.
             </p>
+            {/* Step indicator for mobile UX */}
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">1</span>
+                Revenue
+              </span>
+              <ArrowRight className="w-4 h-4" />
+              <span className="flex items-center gap-1">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">2</span>
+                Costs
+              </span>
+              <ArrowRight className="w-4 h-4" />
+              <span className="flex items-center gap-1">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">3</span>
+                Results
+              </span>
+            </div>
           </div>
 
           <div className="max-w-6xl mx-auto grid lg:grid-cols-5 gap-8">
@@ -352,11 +369,13 @@ export default function Calculator() {
             <div className="lg:col-span-3 space-y-6">
               {/* Attendance & Tickets */}
               <div className="glass rounded-2xl p-6 md:p-8">
-                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Attendance & Tickets
-                </h2>
-                
+                <div className="mb-6">
+                  <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    Attendance & Tickets
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">How many people you expect and what you'll charge at the door</p>
+                </div>
                 <div className="space-y-8">
                   <div>
                     <div className="flex justify-between items-center mb-4">
@@ -399,13 +418,14 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Bar Revenue */}
               <div className="glass rounded-2xl p-6 md:p-8">
-                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
-                  <Wine className="w-5 h-5 text-primary" />
-                  Bar Revenue
-                </h2>
-                
+                <div className="mb-6">
+                  <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                    <Wine className="w-5 h-5 text-primary" />
+                    Bar Revenue
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">Estimated drink sales based on guest consumption</p>
+                </div>
                 <div className="grid sm:grid-cols-2 gap-8">
                   <div>
                     <div className="flex justify-between items-center mb-4">
@@ -445,13 +465,14 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Base Costs */}
               <div className="glass rounded-2xl p-6 md:p-8">
-                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  Base Costs
-                </h2>
-                
+                <div className="mb-6">
+                  <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-primary" />
+                    Base Costs
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">Fixed expenses you'll pay regardless of attendance</p>
+                </div>
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="venue" className="flex items-center gap-2 text-sm">
@@ -460,11 +481,13 @@ export default function Calculator() {
                     </Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                      <Input
+                      <NumberInput
                         id="venue"
-                        type="number"
                         value={venueCost}
-                        onChange={(e) => setVenueCost(Number(e.target.value) || 0)}
+                        onChange={setVenueCost}
+                        min={0}
+                        max={50000}
+                        defaultValue={0}
                         className="pl-7"
                       />
                     </div>
@@ -477,11 +500,13 @@ export default function Calculator() {
                     </Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                      <Input
+                      <NumberInput
                         id="equipment"
-                        type="number"
                         value={equipmentCost}
-                        onChange={(e) => setEquipmentCost(Number(e.target.value) || 0)}
+                        onChange={setEquipmentCost}
+                        min={0}
+                        max={20000}
+                        defaultValue={0}
                         className="pl-7"
                       />
                     </div>
@@ -491,11 +516,12 @@ export default function Calculator() {
 
               {/* Staffing & Services */}
               <div className="glass rounded-2xl p-6 md:p-8">
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6">
                   <h2 className="font-display text-xl font-semibold flex items-center gap-2">
                     <Users className="w-5 h-5 text-primary" />
                     Staffing & Services
                   </h2>
+                  <p className="text-sm text-muted-foreground mt-1">Staff you'll need to run your event — we handle hiring and coordination</p>
                 </div>
                 
                 {/* Smart Staffing Suggestions */}
@@ -518,13 +544,12 @@ export default function Calculator() {
                             <Clock className="w-3 h-3" />
                             Event Duration (hours)
                           </Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={24}
-                            step={0.5}
                             value={eventDurationHours}
-                            onChange={(e) => setEventDurationHours(Number(e.target.value) || 1)}
+                            onChange={setEventDurationHours}
+                            defaultValue={6}
                             className="h-9"
                           />
                         </div>
@@ -580,24 +605,23 @@ export default function Calculator() {
                       <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
                         <div className="space-y-2">
                           <Label className="text-xs">Number of Bartenders</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={10}
                             value={numBartenders}
-                            onChange={(e) => setNumBartenders(Number(e.target.value) || 1)}
+                            onChange={setNumBartenders}
+                            defaultValue={1}
                             className="h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Hours</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={12}
-                            step={0.5}
                             value={bartenderHours}
-                            onChange={(e) => setBartenderHours(Number(e.target.value) || 1)}
+                            onChange={setBartenderHours}
+                            defaultValue={6}
                             className="h-9"
                           />
                         </div>
@@ -630,24 +654,23 @@ export default function Calculator() {
                       <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
                         <div className="space-y-2">
                           <Label className="text-xs">Number of Security</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={10}
                             value={numSecurity}
-                            onChange={(e) => setNumSecurity(Number(e.target.value) || 1)}
+                            onChange={setNumSecurity}
+                            defaultValue={1}
                             className="h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Hours</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={12}
-                            step={0.5}
                             value={securityHours}
-                            onChange={(e) => setSecurityHours(Number(e.target.value) || 1)}
+                            onChange={setSecurityHours}
+                            defaultValue={6}
                             className="h-9"
                           />
                         </div>
@@ -671,38 +694,37 @@ export default function Calculator() {
                     </div>
                     
                     {includeDoorStaff && (
-                      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border/50">
+                      <div className="grid grid-cols-3 sm:gap-4 gap-3 mt-4 pt-4 border-t border-border/50">
                         <div className="space-y-2">
                           <Label className="text-xs">Qty</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={5}
                             value={numDoorStaff}
-                            onChange={(e) => setNumDoorStaff(Number(e.target.value) || 1)}
+                            onChange={setNumDoorStaff}
+                            defaultValue={1}
                             className="h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Hours</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={12}
-                            step={0.5}
                             value={doorStaffHours}
-                            onChange={(e) => setDoorStaffHours(Number(e.target.value) || 1)}
+                            onChange={setDoorStaffHours}
+                            defaultValue={5}
                             className="h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Rate ($/hr)</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={15}
                             max={50}
                             value={doorStaffRate}
-                            onChange={(e) => setDoorStaffRate(Number(e.target.value) || 25)}
+                            onChange={setDoorStaffRate}
+                            defaultValue={25}
                             className="h-9"
                           />
                         </div>
@@ -726,38 +748,37 @@ export default function Calculator() {
                     </div>
                     
                     {includeSetupCrew && (
-                      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border/50">
+                      <div className="grid grid-cols-3 sm:gap-4 gap-3 mt-4 pt-4 border-t border-border/50">
                         <div className="space-y-2">
                           <Label className="text-xs">Qty</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={10}
                             value={numSetupCrew}
-                            onChange={(e) => setNumSetupCrew(Number(e.target.value) || 1)}
+                            onChange={setNumSetupCrew}
+                            defaultValue={2}
                             className="h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Hours</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={1}
                             max={12}
-                            step={0.5}
                             value={setupCrewHours}
-                            onChange={(e) => setSetupCrewHours(Number(e.target.value) || 1)}
+                            onChange={setSetupCrewHours}
+                            defaultValue={3}
                             className="h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Rate ($/hr)</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={15}
                             max={60}
                             value={setupCrewRate}
-                            onChange={(e) => setSetupCrewRate(Number(e.target.value) || 30)}
+                            onChange={setSetupCrewRate}
+                            defaultValue={30}
                             className="h-9"
                           />
                         </div>
@@ -817,11 +838,13 @@ export default function Calculator() {
 
               {/* Catering Section */}
               <div className="glass rounded-2xl p-6 md:p-8">
-                <h2 className="font-display text-xl font-semibold mb-6 flex items-center gap-2">
-                  <UtensilsCrossed className="w-5 h-5 text-primary" />
-                  Catering
-                </h2>
-                
+                <div className="mb-6">
+                  <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                    <UtensilsCrossed className="w-5 h-5 text-primary" />
+                    Catering
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">Optional food service for your guests</p>
+                </div>
                 <div className="space-y-6">
                   {/* Include Catering Toggle */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border">
@@ -866,12 +889,12 @@ export default function Calculator() {
                         <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-secondary/30 border border-border/50">
                           <div className="space-y-2">
                             <Label className="text-xs">Number of Guests</Label>
-                            <Input
-                              type="number"
+                            <NumberInput
                               min={1}
                               max={1000}
                               value={cateringGuests}
-                              onChange={(e) => setCateringGuests(Number(e.target.value) || 1)}
+                              onChange={setCateringGuests}
+                              defaultValue={200}
                               className="h-9"
                             />
                             <p className="text-xs text-muted-foreground">Defaults to attendance</p>
@@ -880,12 +903,12 @@ export default function Calculator() {
                             <Label className="text-xs">Cost per Person</Label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                              <Input
-                                type="number"
+                              <NumberInput
                                 min={1}
                                 max={100}
                                 value={cateringCostPerPerson}
-                                onChange={(e) => setCateringCostPerPerson(Number(e.target.value) || 1)}
+                                onChange={setCateringCostPerPerson}
+                                defaultValue={12}
                                 className="h-9 pl-7"
                               />
                             </div>
@@ -900,11 +923,12 @@ export default function Calculator() {
                             <Label className="text-xs">Package Cost</Label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                              <Input
-                                type="number"
+                              <NumberInput
                                 min={0}
+                                max={50000}
                                 value={cateringPackageCost}
-                                onChange={(e) => setCateringPackageCost(Number(e.target.value) || 0)}
+                                onChange={setCateringPackageCost}
+                                defaultValue={0}
                                 className="h-9 pl-7"
                               />
                             </div>
