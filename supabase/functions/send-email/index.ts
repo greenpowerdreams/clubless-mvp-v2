@@ -71,7 +71,13 @@ serve(async (req: Request): Promise<Response> => {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({ from: from || "Clubless Collective <onboarding@resend.dev>", to: [to], subject, html }),
+      body: JSON.stringify({ 
+        from: from || "Andrew @ Clubless Collective <andrew@clublesscollective.com>", 
+        reply_to: "andrew@clublesscollective.com",
+        to: [to], 
+        subject, 
+        html 
+      }),
     });
 
     const data = await res.json();
