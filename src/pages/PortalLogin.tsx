@@ -128,30 +128,20 @@ export default function PortalLogin() {
                 <Sparkles className="w-8 h-8 text-primary-foreground" />
               </div>
               <h1 className="font-display text-3xl font-bold mb-2">
-                Host <span className="text-gradient">Portal</span>
+                Magic Link <span className="text-gradient">Login</span>
               </h1>
               <p className="text-muted-foreground">
-                Sign in to manage your events
+                Sign in without a password
               </p>
             </div>
 
             <div className="glass rounded-2xl p-8">
-              {/* Mode Toggle */}
-              <div className="flex gap-2 mb-6">
-                <Button
-                  variant={mode === "login" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setMode("login")}
-                >
-                  Password
-                </Button>
-                <Button
-                  variant={mode === "magic" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setMode("magic")}
-                >
-                  Magic Link
-                </Button>
+              {/* Notice about primary login */}
+              <div className="mb-6 p-3 rounded-lg bg-secondary/50 border border-border">
+                <p className="text-xs text-muted-foreground text-center">
+                  Prefer to use your password?{" "}
+                  <a href="/login" className="text-primary hover:underline">Sign in here</a>
+                </p>
               </div>
 
               {mode === "login" ? (
@@ -221,16 +211,36 @@ export default function PortalLogin() {
                     {isLoading ? "Sending..." : "Send Magic Link"}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    We'll send you a secure link to sign in without a password.
+                    We'll email you a secure link to sign in.
                   </p>
                 </form>
               )}
+
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mt-6 pt-6 border-t border-border">
+                <Button
+                  variant={mode === "login" ? "default" : "outline"}
+                  className="flex-1"
+                  size="sm"
+                  onClick={() => setMode("login")}
+                >
+                  Password
+                </Button>
+                <Button
+                  variant={mode === "magic" ? "default" : "outline"}
+                  className="flex-1"
+                  size="sm"
+                  onClick={() => setMode("magic")}
+                >
+                  Magic Link
+                </Button>
+              </div>
             </div>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
               Don't have an account?{" "}
-              <a href="/submit" className="text-primary hover:underline">
-                Submit an event to get started
+              <a href="/signup" className="text-primary hover:underline">
+                Create one
               </a>
             </p>
           </div>

@@ -14,6 +14,10 @@ import Portal from "./pages/Portal";
 import PortalLogin from "./pages/PortalLogin";
 import PortalEventDetail from "./pages/PortalEventDetail";
 import NotFound from "./pages/NotFound";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,10 @@ const App = () => (
           <Route path="/portal" element={<Portal />} />
           <Route path="/portal/login" element={<PortalLogin />} />
           <Route path="/portal/events/:id" element={<PortalEventDetail />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
