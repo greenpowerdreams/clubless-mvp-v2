@@ -84,9 +84,12 @@ serve(async (req: Request): Promise<Response> => {
       isNewUser = true;
       console.log("Created new user:", userId);
 
-      // Send magic link email
-      const siteUrl = Deno.env.get("SITE_URL") || supabaseUrl.replace(".supabase.co", ".lovable.app");
-      const { error: magicLinkError } = await supabase.auth.admin.generateLink({
+      // Send welcome email with magic link
+      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+      const siteUrl = Deno.env.get("SITE_URL") || "https://epzdbinxjqhjjgrhynpr.lovable.app";
+      
+      // Generate magic link for the user
+      const { data: linkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
         type: "magiclink",
         email: email,
         options: {
@@ -95,8 +98,52 @@ serve(async (req: Request): Promise<Response> => {
       });
 
       if (magicLinkError) {
-        console.error("Error sending magic link:", magicLinkError);
-        // Don't throw - we still want to save the proposal
+        console.error("Error generating magic link:", magicLinkError);
+      } else if (linkData?.properties?.action_link) {
+        // Send the email via Resend
+        try {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "Lovable Events <onboarding@resend.dev>",
+              to: [email],
+              subject: "Welcome! Access Your Event Dashboard",
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h1 style="color: #333; margin-bottom: 24px;">Welcome to Lovable Events, ${submission.submitter_name}!</h1>
+                  <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                    Your event proposal for <strong>${submission.city}</strong> has been submitted successfully.
+                  </p>
+                  <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                    Click the button below to access your dashboard and track your proposal status:
+                  </p>
+                  <div style="text-align: center; margin: 32px 0;">
+                    <a href="${linkData.properties.action_link}" 
+                       style="background-color: #7c3aed; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                      Access Your Dashboard
+                    </a>
+                  </div>
+                  <p style="color: #999; font-size: 14px;">
+                    This link will expire in 24 hours. If you didn't submit an event proposal, you can safely ignore this email.
+                  </p>
+                </div>
+              `,
+            }),
+          });
+          
+          if (res.ok) {
+            console.log("Welcome email sent to:", email);
+          } else {
+            const errorData = await res.json();
+            console.error("Resend API error:", errorData);
+          }
+        } catch (emailError) {
+          console.error("Error sending welcome email:", emailError);
+        }
       }
     }
 
