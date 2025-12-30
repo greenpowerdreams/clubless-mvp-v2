@@ -107,6 +107,7 @@ export default function Portal() {
     switch (status) {
       case "submitted": return "bg-blue-500/20 text-blue-400";
       case "under_review": return "bg-yellow-500/20 text-yellow-400";
+      case "needs_info": return "bg-orange-500/20 text-orange-400";
       case "approved": return "bg-green-500/20 text-green-400";
       case "published": return "bg-purple-500/20 text-purple-400";
       case "completed": return "bg-emerald-500/20 text-emerald-400";

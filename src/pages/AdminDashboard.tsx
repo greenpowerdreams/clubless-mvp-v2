@@ -10,6 +10,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Zap,
   Calendar,
@@ -27,10 +37,13 @@ import {
   LogOut,
   TrendingUp,
   Ticket,
-  Wine,
   Building2,
   ExternalLink,
   Globe,
+  AlertCircle,
+  Eye,
+  Send,
+  HelpCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -48,21 +61,40 @@ interface ProfitSummary {
 
 interface Proposal {
   id: string;
-  name: string;
-  email: string;
+  submitter_name: string;
+  submitter_email: string;
   instagram_handle: string | null;
   city: string;
   event_concept: string;
-  preferred_date: string;
+  preferred_event_date: string;
   fee_model: string;
-  profit_summary: ProfitSummary | null;
+  full_calculator_json: ProfitSummary | null;
+  projected_revenue: number | null;
+  projected_costs: number | null;
+  projected_profit: number | null;
   status: string;
+  status_notes: string | null;
+  status_updated_at: string;
   created_at: string;
+  approved_at: string | null;
+  published_at: string | null;
   eventbrite_url: string | null;
   eventbrite_status: string | null;
 }
 
-type SortField = "created_at" | "preferred_date" | "city" | "profit";
+type ProposalStatus = "submitted" | "under_review" | "needs_info" | "approved" | "published" | "completed" | "rejected";
+
+const STATUS_OPTIONS: { value: ProposalStatus; label: string; color: string }[] = [
+  { value: "submitted", label: "Submitted", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  { value: "under_review", label: "Under Review", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+  { value: "needs_info", label: "Needs Info", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+  { value: "approved", label: "Approved", color: "bg-green-500/20 text-green-400 border-green-500/30" },
+  { value: "published", label: "Published", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  { value: "completed", label: "Completed", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  { value: "rejected", label: "Rejected", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+];
+
+type SortField = "created_at" | "preferred_event_date" | "city" | "profit";
 type SortDirection = "asc" | "desc";
 
 export default function AdminDashboard() {
@@ -78,6 +110,12 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [eventbriteUrlInput, setEventbriteUrlInput] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Status change dialog
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<ProposalStatus | null>(null);
+  const [statusNotes, setStatusNotes] = useState("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -136,15 +174,15 @@ export default function AdminDashboard() {
         case "created_at":
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
-        case "preferred_date":
-          comparison = new Date(a.preferred_date).getTime() - new Date(b.preferred_date).getTime();
+        case "preferred_event_date":
+          comparison = new Date(a.preferred_event_date).getTime() - new Date(b.preferred_event_date).getTime();
           break;
         case "city":
           comparison = a.city.localeCompare(b.city);
           break;
         case "profit":
-          const profitA = a.profit_summary?.yourTakeHome || 0;
-          const profitB = b.profit_summary?.yourTakeHome || 0;
+          const profitA = a.projected_profit || 0;
+          const profitB = b.projected_profit || 0;
           comparison = profitA - profitB;
           break;
       }
@@ -153,27 +191,57 @@ export default function AdminDashboard() {
     });
   }, [proposals, sortField, sortDirection, statusFilter]);
 
-  const updateStatus = async (id: string, status: "approved" | "rejected") => {
+  const openStatusDialog = (status: ProposalStatus) => {
+    setPendingStatus(status);
+    setStatusNotes(selectedProposal?.status_notes || "");
+    setStatusDialogOpen(true);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!selectedProposal || !pendingStatus) return;
+
+    setIsUpdatingStatus(true);
     try {
+      const updateData: Record<string, unknown> = {
+        status: pendingStatus,
+        status_notes: statusNotes.trim() || null,
+      };
+
+      // Set timestamps for specific statuses
+      if (pendingStatus === "approved") {
+        updateData.approved_at = new Date().toISOString();
+      }
+      if (pendingStatus === "published") {
+        updateData.published_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("event_proposals")
-        .update({ status })
-        .eq("id", id);
+        .update(updateData)
+        .eq("id", selectedProposal.id);
 
       if (error) throw error;
 
+      // Update local state
+      const updatedProposal = {
+        ...selectedProposal,
+        status: pendingStatus,
+        status_notes: statusNotes.trim() || null,
+        ...(pendingStatus === "approved" && { approved_at: new Date().toISOString() }),
+        ...(pendingStatus === "published" && { published_at: new Date().toISOString() }),
+      };
+
       setProposals((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status } : p))
+        prev.map((p) => (p.id === selectedProposal.id ? updatedProposal : p))
       );
-      
-      if (selectedProposal?.id === id) {
-        setSelectedProposal((prev) => (prev ? { ...prev, status } : null));
-      }
+      setSelectedProposal(updatedProposal);
 
       toast({
-        title: `Proposal ${status}`,
-        description: `The proposal has been ${status}.`,
+        title: "Status Updated",
+        description: `Proposal status changed to "${STATUS_OPTIONS.find(s => s.value === pendingStatus)?.label}"`,
       });
+
+      setStatusDialogOpen(false);
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -181,6 +249,8 @@ export default function AdminDashboard() {
         description: "Failed to update proposal status",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -200,27 +270,30 @@ export default function AdminDashboard() {
         .from("event_proposals")
         .update({ 
           eventbrite_url: eventbriteUrlInput.trim(),
-          eventbrite_status: 'published'
+          eventbrite_status: 'published',
+          status: 'published',
+          published_at: new Date().toISOString(),
         })
         .eq("id", selectedProposal.id);
 
       if (error) throw error;
 
+      const updatedProposal = {
+        ...selectedProposal,
+        eventbrite_url: eventbriteUrlInput.trim(),
+        eventbrite_status: 'published',
+        status: 'published',
+        published_at: new Date().toISOString(),
+      };
+
       setProposals((prev) =>
-        prev.map((p) => 
-          p.id === selectedProposal.id 
-            ? { ...p, eventbrite_url: eventbriteUrlInput.trim(), eventbrite_status: 'published' } 
-            : p
-        )
+        prev.map((p) => (p.id === selectedProposal.id ? updatedProposal : p))
       );
-      
-      setSelectedProposal((prev) => 
-        prev ? { ...prev, eventbrite_url: eventbriteUrlInput.trim(), eventbrite_status: 'published' } : null
-      );
+      setSelectedProposal(updatedProposal);
 
       toast({
-        title: "Marked as Published",
-        description: "The Eventbrite URL has been saved.",
+        title: "Published!",
+        description: "Event is now published on Eventbrite.",
       });
     } catch (error) {
       console.error("Error marking as published:", error);
@@ -243,26 +316,26 @@ export default function AdminDashboard() {
       "Preferred Date",
       "Fee Model",
       "Status",
-      "Attendance",
-      "Total Revenue",
-      "Total Costs",
+      "Status Notes",
+      "Projected Revenue",
+      "Projected Costs",
       "Projected Profit",
       "Event Concept",
       "Submitted At",
     ];
 
     const rows = sortedProposals.map((p) => [
-      p.name,
-      p.email,
+      p.submitter_name,
+      p.submitter_email,
       p.instagram_handle || "",
       p.city,
-      p.preferred_date,
+      p.preferred_event_date,
       p.fee_model,
       p.status,
-      p.profit_summary?.attendance || "",
-      p.profit_summary?.totalRevenue || "",
-      p.profit_summary?.totalCosts || "",
-      p.profit_summary?.yourTakeHome || "",
+      p.status_notes || "",
+      p.projected_revenue || "",
+      p.projected_costs || "",
+      p.projected_profit || "",
       `"${p.event_concept.replace(/"/g, '""')}"`,
       p.created_at,
     ]);
@@ -285,17 +358,15 @@ export default function AdminDashboard() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Approved</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Rejected</Badge>;
-      default:
-        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pending</Badge>;
+    const statusConfig = STATUS_OPTIONS.find(s => s.value === status);
+    if (statusConfig) {
+      return <Badge className={statusConfig.color}>{statusConfig.label}</Badge>;
     }
+    return <Badge className="bg-muted text-muted-foreground">Unknown</Badge>;
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null) return "—";
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -318,6 +389,53 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Status Change Dialog */}
+      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Change Status to "{STATUS_OPTIONS.find(s => s.value === pendingStatus)?.label}"
+            </DialogTitle>
+            <DialogDescription>
+              {pendingStatus === "needs_info" && "The user will be prompted to check their email for more details."}
+              {pendingStatus === "approved" && "This will set the approved_at timestamp."}
+              {pendingStatus === "rejected" && "This will mark the proposal as rejected."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="status-notes">Status Notes (optional)</Label>
+              <Textarea
+                id="status-notes"
+                value={statusNotes}
+                onChange={(e) => setStatusNotes(e.target.value)}
+                placeholder={
+                  pendingStatus === "needs_info" 
+                    ? "e.g., Need venue confirmation, waiting on date availability..."
+                    : pendingStatus === "rejected"
+                    ? "e.g., Location not currently supported..."
+                    : "Add any notes about this status change..."
+                }
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmStatusChange} disabled={isUpdatingStatus}>
+              {isUpdatingStatus ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className="glass-strong border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -366,7 +484,7 @@ export default function AdminDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="created_at">Submit Date</SelectItem>
-                <SelectItem value="preferred_date">Event Date</SelectItem>
+                <SelectItem value="preferred_event_date">Event Date</SelectItem>
                 <SelectItem value="city">City</SelectItem>
                 <SelectItem value="profit">Projected Profit</SelectItem>
               </SelectContent>
@@ -383,14 +501,16 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Status:</span>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -430,7 +550,7 @@ export default function AdminDashboard() {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold truncate">{proposal.name}</h3>
+                      <h3 className="font-semibold truncate">{proposal.submitter_name}</h3>
                       {getStatusBadge(proposal.status)}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2 truncate">
@@ -439,12 +559,12 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {new Date(proposal.preferred_date).toLocaleDateString()}
+                        {new Date(proposal.preferred_event_date).toLocaleDateString()}
                       </span>
-                      {proposal.profit_summary?.yourTakeHome && (
+                      {proposal.projected_profit && (
                         <span className="flex items-center gap-1 text-primary">
                           <DollarSign className="w-3 h-3" />
-                          {formatCurrency(proposal.profit_summary.yourTakeHome)}
+                          {formatCurrency(proposal.projected_profit)}
                         </span>
                       )}
                     </div>
@@ -461,7 +581,7 @@ export default function AdminDashboard() {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <h2 className="font-display text-2xl font-bold">
-                          {selectedProposal.name}
+                          {selectedProposal.submitter_name}
                         </h2>
                         {getStatusBadge(selectedProposal.status)}
                       </div>
@@ -472,27 +592,39 @@ export default function AdminDashboard() {
                         {new Date(selectedProposal.created_at).toLocaleTimeString()}
                       </p>
                     </div>
-                    {selectedProposal.status === "pending" && (
-                      <div className="flex gap-2">
+                  </div>
+
+                  {/* Status Notes Display */}
+                  {selectedProposal.status_notes && (
+                    <div className="mb-6 p-4 bg-muted/50 rounded-xl border border-border">
+                      <p className="text-sm font-medium mb-1">Status Notes:</p>
+                      <p className="text-sm text-muted-foreground">{selectedProposal.status_notes}</p>
+                    </div>
+                  )}
+
+                  {/* Status Actions */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Change Status</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {STATUS_OPTIONS.map((status) => (
                         <Button
+                          key={status.value}
                           size="sm"
-                          variant="outline"
-                          className="text-red-400 border-red-400/30 hover:bg-red-400/10"
-                          onClick={() => updateStatus(selectedProposal.id, "rejected")}
+                          variant={selectedProposal.status === status.value ? "default" : "outline"}
+                          disabled={selectedProposal.status === status.value}
+                          onClick={() => openStatusDialog(status.value)}
+                          className="text-xs"
                         >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Reject
+                          {status.value === "under_review" && <Eye className="w-3 h-3 mr-1" />}
+                          {status.value === "needs_info" && <HelpCircle className="w-3 h-3 mr-1" />}
+                          {status.value === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {status.value === "published" && <Send className="w-3 h-3 mr-1" />}
+                          {status.value === "completed" && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {status.value === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
+                          {status.label}
                         </Button>
-                        <Button
-                          size="sm"
-                          className="bg-green-500 hover:bg-green-600"
-                          onClick={() => updateStatus(selectedProposal.id, "approved")}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
 
                   {/* Contact & Event Info */}
@@ -502,10 +634,10 @@ export default function AdminDashboard() {
                         Contact Information
                       </h3>
                       <div className="space-y-2">
-                        <p className="font-medium">{selectedProposal.name}</p>
+                        <p className="font-medium">{selectedProposal.submitter_name}</p>
                         <p className="flex items-center gap-2 text-sm">
                           <Mail className="w-4 h-4 text-primary" />
-                          {selectedProposal.email}
+                          {selectedProposal.submitter_email}
                         </p>
                         {selectedProposal.instagram_handle && (
                           <p className="flex items-center gap-2 text-sm">
@@ -527,7 +659,7 @@ export default function AdminDashboard() {
                       <div className="space-y-2 text-sm">
                         <p className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-primary" />
-                          {new Date(selectedProposal.preferred_date).toLocaleDateString(
+                          {new Date(selectedProposal.preferred_event_date).toLocaleDateString(
                             "en-US",
                             { weekday: "long", year: "numeric", month: "long", day: "numeric" }
                           )}
@@ -540,91 +672,59 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Full Calculator Breakdown */}
-                  {selectedProposal.profit_summary && (
+                  {/* Profit Summary */}
+                  {(selectedProposal.projected_revenue || selectedProposal.full_calculator_json) && (
                     <div className="mb-8">
                       <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-primary" />
-                        Full Calculator Breakdown
+                        Profit Projection
                       </h3>
                       
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        {/* Revenue */}
+                      <div className="grid sm:grid-cols-3 gap-4">
                         <div className="bg-secondary/50 rounded-xl p-4">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-3">Revenue</h4>
-                          <div className="space-y-2">
-                            {selectedProposal.profit_summary.attendance && (
-                              <div className="flex justify-between text-sm">
-                                <span className="flex items-center gap-2 text-muted-foreground">
-                                  <Users className="w-4 h-4" /> Attendance
-                                </span>
-                                <span className="font-medium">{selectedProposal.profit_summary.attendance}</span>
-                              </div>
-                            )}
-                            {selectedProposal.profit_summary.ticketPrice && (
-                              <div className="flex justify-between text-sm">
-                                <span className="flex items-center gap-2 text-muted-foreground">
-                                  <Ticket className="w-4 h-4" /> Ticket Price
-                                </span>
-                                <span className="font-medium">{formatCurrency(selectedProposal.profit_summary.ticketPrice)}</span>
-                              </div>
-                            )}
-                            {selectedProposal.profit_summary.totalRevenue && (
-                              <div className="flex justify-between text-sm pt-2 border-t border-border/50">
-                                <span className="font-medium">Total Revenue</span>
-                                <span className="font-bold text-primary">
-                                  {formatCurrency(selectedProposal.profit_summary.totalRevenue)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">Revenue</p>
+                          <p className="text-xl font-bold">
+                            {formatCurrency(selectedProposal.projected_revenue)}
+                          </p>
                         </div>
-
-                        {/* Costs */}
                         <div className="bg-secondary/50 rounded-xl p-4">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-3">Costs</h4>
-                          <div className="space-y-2">
-                            {selectedProposal.profit_summary.totalCosts && (
-                              <div className="flex justify-between text-sm">
-                                <span className="flex items-center gap-2 text-muted-foreground">
-                                  <Building2 className="w-4 h-4" /> Total Costs
-                                </span>
-                                <span className="font-medium text-destructive">
-                                  -{formatCurrency(selectedProposal.profit_summary.totalCosts)}
-                                </span>
-                              </div>
-                            )}
-                            {selectedProposal.profit_summary.netProfit && (
-                              <div className="flex justify-between text-sm pt-2 border-t border-border/50">
-                                <span className="font-medium">Net Profit</span>
-                                <span className="font-bold">
-                                  {formatCurrency(selectedProposal.profit_summary.netProfit)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">Costs</p>
+                          <p className="text-xl font-bold">
+                            {formatCurrency(selectedProposal.projected_costs)}
+                          </p>
                         </div>
-                      </div>
-
-                      {/* Final Take-Home */}
-                      <div className="mt-4 bg-gradient-primary/10 border border-primary/20 rounded-xl p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Organizer Take-Home</p>
-                            <p className="text-xs text-muted-foreground">
-                              After {selectedProposal.profit_summary.feeModel === "profit-share" ? "50/50" : "15%"} Clubless fee
-                            </p>
-                          </div>
-                          <p className="text-3xl font-display font-bold text-gradient">
-                            {formatCurrency(selectedProposal.profit_summary.yourTakeHome || 0)}
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                          <p className="text-sm text-green-400 mb-1">Take-Home</p>
+                          <p className="text-xl font-bold text-green-400">
+                            {formatCurrency(selectedProposal.projected_profit)}
                           </p>
                         </div>
                       </div>
+
+                      {selectedProposal.full_calculator_json && (
+                        <div className="mt-4 p-4 bg-muted/30 rounded-xl">
+                          <p className="text-sm font-medium mb-2">Calculator Details</p>
+                          <div className="grid sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            {selectedProposal.full_calculator_json.attendance && (
+                              <p className="flex items-center gap-2">
+                                <Users className="w-4 h-4" />
+                                Attendance: {selectedProposal.full_calculator_json.attendance}
+                              </p>
+                            )}
+                            {selectedProposal.full_calculator_json.ticketPrice && (
+                              <p className="flex items-center gap-2">
+                                <Ticket className="w-4 h-4" />
+                                Ticket: {formatCurrency(selectedProposal.full_calculator_json.ticketPrice)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Eventbrite Section - Only for approved proposals */}
-                  {selectedProposal.status === "approved" && (
+                  {/* Eventbrite Section - Only for approved/published proposals */}
+                  {(selectedProposal.status === "approved" || selectedProposal.status === "published") && (
                     <div className="mb-8">
                       <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
                         <Globe className="w-5 h-5 text-primary" />
@@ -647,7 +747,7 @@ export default function AdminDashboard() {
                               onClick={() => window.open(selectedProposal.eventbrite_url!, '_blank')}
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
-                              Open on Eventbrite
+                              Open
                             </Button>
                           </div>
                         </div>
@@ -672,7 +772,7 @@ export default function AdminDashboard() {
                               ) : (
                                 <CheckCircle className="w-4 h-4 mr-1" />
                               )}
-                              Mark as Published
+                              Publish
                             </Button>
                           </div>
                         </div>
