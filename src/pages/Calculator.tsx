@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -43,13 +43,58 @@ import {
   Info,
   Zap,
   Clock,
+  Crown,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // Locked rates (non-editable)
 const BARTENDER_RATE = 40;
 const SECURITY_RATE = 25;
 
+interface UserLevel {
+  current_level: number;
+  level_name: string;
+  service_fee_percent: number;
+}
+
 export default function Calculator() {
+  // User level state
+  const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Fetch user level on mount
+  useEffect(() => {
+    const fetchUserLevel = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        setIsLoggedIn(true);
+        const { data } = await supabase.rpc("get_user_level", { p_user_id: session.user.id });
+        if (data && data.length > 0) {
+          setUserLevel(data[0] as UserLevel);
+        }
+      }
+    };
+
+    fetchUserLevel();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setIsLoggedIn(true);
+        supabase.rpc("get_user_level", { p_user_id: session.user.id }).then(({ data }) => {
+          if (data && data.length > 0) {
+            setUserLevel(data[0] as UserLevel);
+          }
+        });
+      } else {
+        setIsLoggedIn(false);
+        setUserLevel(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // User inputs - Revenue
   const [attendance, setAttendance] = useState(200);
   const [ticketPrice, setTicketPrice] = useState(25);
@@ -95,6 +140,12 @@ export default function Calculator() {
   
   // Fee model toggle
   const [isProfitShare, setIsProfitShare] = useState(false);
+
+  // Get effective service fee (user's level fee or default 15%)
+  const effectiveServiceFee = useMemo(() => {
+    if (isProfitShare) return 50; // Profit share is always 50%
+    return userLevel?.service_fee_percent ?? 15;
+  }, [userLevel, isProfitShare]);
 
   // Smart staffing auto-fill function
   const handleAutoFillStaffing = () => {
@@ -229,7 +280,7 @@ export default function Calculator() {
     // Net profit before Clubless fee
     const netEventProfit = Math.max(0, totalRevenue - totalCosts);
 
-    // Clubless fee calculation
+    // Clubless fee calculation - use user's level fee or default
     let clublessFee: number;
     let feePercentage: number;
     
@@ -237,8 +288,9 @@ export default function Calculator() {
       clublessFee = netEventProfit * 0.5;
       feePercentage = 50;
     } else {
-      clublessFee = netEventProfit * 0.15;
-      feePercentage = 15;
+      const serviceFeeRate = effectiveServiceFee / 100;
+      clublessFee = netEventProfit * serviceFeeRate;
+      feePercentage = effectiveServiceFee;
     }
 
     // Final take-home
@@ -258,7 +310,7 @@ export default function Calculator() {
       yourPercentage,
       profitPerGuest,
     };
-  }, [attendance, ticketPrice, drinksPerAttendee, drinkPrice, venueCost, equipmentCost, servicesBreakdown.total, isProfitShare]);
+  }, [attendance, ticketPrice, drinksPerAttendee, drinkPrice, venueCost, equipmentCost, servicesBreakdown.total, isProfitShare, effectiveServiceFee]);
 
   // Sync catering guests with attendance when in per-person mode
   const handleAttendanceChange = (value: number) => {
@@ -956,6 +1008,25 @@ export default function Calculator() {
                   <PieChart className="w-5 h-5 text-primary" />
                   Clubless Fee Model
                 </h2>
+
+                {/* User Level Discount Banner */}
+                {isLoggedIn && userLevel && userLevel.service_fee_percent < 15 && !isProfitShare && (
+                  <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                        <Crown className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-green-400">
+                          {userLevel.level_name} Discount Applied!
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Your service fee is {userLevel.service_fee_percent}% instead of 15% — saving you {15 - userLevel.service_fee_percent}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -965,7 +1036,12 @@ export default function Calculator() {
                           <span className="font-semibold">Service Fee</span>
                           {!isProfitShare && <Sparkles className="w-4 h-4 text-primary" />}
                         </div>
-                        <p className="text-sm text-muted-foreground">15% of net profit</p>
+                        <p className="text-sm text-muted-foreground">
+                          {effectiveServiceFee}% of net profit
+                          {isLoggedIn && userLevel && userLevel.service_fee_percent < 15 && (
+                            <span className="ml-1 text-green-400">(Level discount)</span>
+                          )}
+                        </p>
                       </div>
                       
                       <Switch
@@ -988,7 +1064,9 @@ export default function Calculator() {
                 <p className="text-xs text-muted-foreground mt-4">
                   {isProfitShare 
                     ? "Profit Share includes premium services: marketing support, venue sourcing, and priority scheduling."
-                    : "Service Fee is our standard model. You keep 85% of net profits."}
+                    : isLoggedIn && userLevel
+                      ? `As a ${userLevel.level_name}, you keep ${100 - effectiveServiceFee}% of net profits.`
+                      : "Service Fee is our standard model. You keep 85% of net profits."}
                 </p>
               </div>
             </div>
