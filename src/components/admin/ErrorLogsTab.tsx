@@ -18,7 +18,7 @@ interface ErrorLog {
   id: string;
   timestamp: string;
   event_type: string;
-  user_email: string | null;
+  user_id: string | null;
   error_message: string | null;
   details: Record<string, unknown> | null;
   resolved: boolean | null;
@@ -86,7 +86,7 @@ export function ErrorLogsTab() {
     (log) =>
       log.event_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.error_message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.user_email?.toLowerCase().includes(searchTerm.toLowerCase())
+      log.user_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDate = (dateStr: string) => {
@@ -126,7 +126,7 @@ export function ErrorLogsTab() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by event, error, or email..."
+            placeholder="Search by event, error, or user ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-secondary/50"
@@ -171,8 +171,8 @@ export function ErrorLogsTab() {
                       {log.event_type}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {log.user_email || "—"}
+                  <TableCell className="text-sm font-mono text-xs">
+                    {log.user_id ? log.user_id.slice(0, 8) + "..." : "—"}
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <span className="text-sm text-red-400 truncate block">

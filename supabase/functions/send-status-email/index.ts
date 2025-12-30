@@ -288,10 +288,9 @@ serve(async (req: Request): Promise<Response> => {
       console.error("send_status_email: Resend API error:", resData);
       await logEmail(supabase, proposal.submitter_email, `status_${new_status}`, "failed", undefined, resData.message, { proposal_id, new_status });
       
-      // Log to error_logs
+      // Log to error_logs (no user_email for PII protection)
       await supabase.from("error_logs").insert({
         event_type: "status_email_failed",
-        user_email: proposal.submitter_email,
         error_message: resData.message || "Failed to send status email",
         details: { proposal_id, new_status, resendError: resData },
       });

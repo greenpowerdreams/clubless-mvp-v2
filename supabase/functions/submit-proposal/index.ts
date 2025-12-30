@@ -70,11 +70,10 @@ async function checkRateLimit(identifier: string): Promise<{ allowed: boolean; r
   };
 }
 
-// Helper to log errors to the error_logs table
+// Helper to log errors to the error_logs table (user_id only, no email for PII protection)
 async function logError(
   supabase: any,
   eventType: string,
-  email: string | null,
   userId: string | null,
   errorMessage: string,
   details?: Record<string, unknown>
@@ -82,7 +81,6 @@ async function logError(
   try {
     await supabase.from("error_logs").insert({
       event_type: eventType,
-      user_email: email,
       user_id: userId,
       error_message: errorMessage,
       details: details || null,
@@ -255,7 +253,7 @@ serve(async (req: Request): Promise<Response> => {
       const resetDate = new Date(rateLimitResult.resetAt);
       console.warn("submit_proposal: Rate limit exceeded for:", rateLimitIdentifier);
       
-      await logError(supabase, "rate_limit_exceeded", email, userId, "Too many submissions", {
+      await logError(supabase, "rate_limit_exceeded", userId, "Too many submissions", {
         identifier: rateLimitIdentifier,
         reset_at: resetDate.toISOString()
       });
@@ -311,7 +309,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (insertError) {
       console.error("submit_proposal: Error inserting proposal:", insertError);
-      await logError(supabase, "proposal_insert_failed", email, userId, insertError.message, { 
+      await logError(supabase, "proposal_insert_failed", userId, insertError.message, { 
         code: insertError.code,
         details: insertError.details 
       });
