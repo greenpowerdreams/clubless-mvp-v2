@@ -32,6 +32,44 @@ const ProposalSubmissionSchema = z.object({
 
 type ProposalSubmission = z.infer<typeof ProposalSubmissionSchema>;
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+const MAX_SUBMISSIONS_PER_WINDOW = 5; // Max 5 submissions per hour per user/email
+
+// Rate limiter using Deno KV
+async function checkRateLimit(identifier: string): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const kv = await Deno.openKv();
+  const key = ["rate_limit", "submit_proposal", identifier];
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  
+  // Get existing submissions in the window
+  const entry = await kv.get<{ timestamps: number[] }>(key);
+  const timestamps = entry.value?.timestamps ?? [];
+  
+  // Filter to only timestamps within the current window
+  const recentTimestamps = timestamps.filter(ts => ts > windowStart);
+  
+  if (recentTimestamps.length >= MAX_SUBMISSIONS_PER_WINDOW) {
+    // Rate limit exceeded
+    const oldestInWindow = Math.min(...recentTimestamps);
+    const resetAt = oldestInWindow + RATE_LIMIT_WINDOW_MS;
+    kv.close();
+    return { allowed: false, remaining: 0, resetAt };
+  }
+  
+  // Add current timestamp and save
+  recentTimestamps.push(now);
+  await kv.set(key, { timestamps: recentTimestamps }, { expireIn: RATE_LIMIT_WINDOW_MS });
+  kv.close();
+  
+  return { 
+    allowed: true, 
+    remaining: MAX_SUBMISSIONS_PER_WINDOW - recentTimestamps.length,
+    resetAt: now + RATE_LIMIT_WINDOW_MS
+  };
+}
+
 // Helper to log errors to the error_logs table
 async function logError(
   supabase: any,
@@ -206,6 +244,45 @@ serve(async (req: Request): Promise<Response> => {
 
   // Use the user_id passed from frontend (user is already logged in)
   const userId = submission.user_id || null;
+
+  // Rate limiting: use user_id if available, otherwise fall back to email
+  const rateLimitIdentifier = userId || email;
+  
+  try {
+    const rateLimitResult = await checkRateLimit(rateLimitIdentifier);
+    
+    if (!rateLimitResult.allowed) {
+      const resetDate = new Date(rateLimitResult.resetAt);
+      console.warn("submit_proposal: Rate limit exceeded for:", rateLimitIdentifier);
+      
+      await logError(supabase, "rate_limit_exceeded", email, userId, "Too many submissions", {
+        identifier: rateLimitIdentifier,
+        reset_at: resetDate.toISOString()
+      });
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Too many submissions. Please wait before submitting another proposal.",
+          retry_after: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)),
+            ...corsHeaders 
+          } 
+        }
+      );
+    }
+    
+    console.log("submit_proposal: Rate limit check passed, remaining:", rateLimitResult.remaining);
+  } catch (rateLimitError) {
+    // If rate limiting fails, log but continue (fail open for better UX)
+    console.error("submit_proposal: Rate limit check failed, continuing:", rateLimitError);
+  }
+
   let emailSent = false;
   let emailError: string | undefined = undefined;
 
