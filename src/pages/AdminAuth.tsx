@@ -213,7 +213,15 @@ export default function AdminAuth() {
             )}
           </Button>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
+            {!isSignUp && (
+              <a
+                href="/forgot-password"
+                className="block text-sm text-primary hover:underline transition-colors"
+              >
+                Forgot your password?
+              </a>
+            )}
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
