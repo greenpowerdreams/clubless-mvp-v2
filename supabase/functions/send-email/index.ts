@@ -31,7 +31,7 @@ serve(async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: from || "Lovable Events <onboarding@resend.dev>",
+        from: from || "Clubless Collective <onboarding@resend.dev>",
         to: [to],
         subject,
         html,

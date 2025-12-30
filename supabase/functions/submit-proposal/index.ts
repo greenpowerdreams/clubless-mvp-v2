@@ -109,26 +109,30 @@ serve(async (req: Request): Promise<Response> => {
               "Authorization": `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: "Lovable Events <onboarding@resend.dev>",
+              from: "Clubless Collective <onboarding@resend.dev>",
               to: [email],
-              subject: "Welcome! Access Your Event Dashboard",
+              subject: "Welcome to Clubless Collective! Access Your Dashboard",
               html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                  <h1 style="color: #333; margin-bottom: 24px;">Welcome to Lovable Events, ${submission.submitter_name}!</h1>
-                  <p style="color: #666; font-size: 16px; line-height: 1.6;">
-                    Your event proposal for <strong>${submission.city}</strong> has been submitted successfully.
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0f; color: #ffffff;">
+                  <h1 style="color: #bb86fc; margin-bottom: 24px;">Welcome to Clubless Collective, ${submission.submitter_name}!</h1>
+                  <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
+                    Your event proposal for <strong style="color: #ffffff;">${submission.city}</strong> has been submitted successfully.
                   </p>
-                  <p style="color: #666; font-size: 16px; line-height: 1.6;">
-                    Click the button below to access your dashboard and track your proposal status:
+                  <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
+                    Click the button below to access your Host Portal and track your proposal:
                   </p>
                   <div style="text-align: center; margin: 32px 0;">
                     <a href="${linkData.properties.action_link}" 
-                       style="background-color: #7c3aed; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                       style="background: linear-gradient(135deg, #bb86fc, #ff6bcb); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
                       Access Your Dashboard
                     </a>
                   </div>
-                  <p style="color: #999; font-size: 14px;">
+                  <p style="color: #71717a; font-size: 14px;">
                     This link will expire in 24 hours. If you didn't submit an event proposal, you can safely ignore this email.
+                  </p>
+                  <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
+                  <p style="color: #52525b; font-size: 12px; text-align: center;">
+                    Clubless Collective — Host your event, keep your profit.
                   </p>
                 </div>
               `,
