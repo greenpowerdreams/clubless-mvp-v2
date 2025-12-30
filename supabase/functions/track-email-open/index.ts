@@ -19,14 +19,45 @@ const corsHeaders = {
   "Expires": "0",
 };
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 30; // Max 30 requests per minute per IP
+
+// Simple in-memory rate limiting (resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(identifier);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
+// Cleanup old rate limit entries periodically
+function cleanupRateLimitMap() {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-
-  const url = new URL(req.url);
-  const trackingId = url.searchParams.get("t");
 
   // Always return the pixel, even if tracking fails
   const pixelResponse = () => new Response(TRACKING_PIXEL, {
@@ -37,6 +68,21 @@ serve(async (req: Request): Promise<Response> => {
       ...corsHeaders,
     },
   });
+
+  // Get client IP for rate limiting
+  const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                   req.headers.get("x-real-ip") || 
+                   "unknown";
+
+  // Check rate limit - return pixel silently if exceeded (don't reveal rate limiting)
+  if (!checkRateLimit(clientIP)) {
+    console.log("track_email_open: Rate limit exceeded for IP:", clientIP);
+    cleanupRateLimitMap();
+    return pixelResponse();
+  }
+
+  const url = new URL(req.url);
+  const trackingId = url.searchParams.get("t");
 
   if (!trackingId) {
     console.log("track_email_open: No tracking ID provided");
@@ -90,6 +136,11 @@ serve(async (req: Request): Promise<Response> => {
     }
   } catch (err) {
     console.error("track_email_open: Error:", err);
+  }
+
+  // Periodic cleanup
+  if (Math.random() < 0.1) {
+    cleanupRateLimitMap();
   }
 
   return pixelResponse();

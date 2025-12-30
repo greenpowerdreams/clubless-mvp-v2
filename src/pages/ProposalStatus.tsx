@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,16 +17,44 @@ interface ProposalStatus {
   created_at: string;
 }
 
+// Rate limiting constants
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 lookups per minute
+
 export default function ProposalStatus() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [proposals, setProposals] = useState<ProposalStatus[]>([]);
   const [searched, setSearched] = useState(false);
+  
+  // Rate limiting state
+  const requestTimestamps = useRef<number[]>([]);
+
+  const checkRateLimit = (): boolean => {
+    const now = Date.now();
+    // Remove timestamps older than the window
+    requestTimestamps.current = requestTimestamps.current.filter(
+      (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+    );
+    
+    if (requestTimestamps.current.length >= RATE_LIMIT_MAX_REQUESTS) {
+      return false;
+    }
+    
+    requestTimestamps.current.push(now);
+    return true;
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
       toast.error("Please enter your email");
+      return;
+    }
+
+    // Check rate limit
+    if (!checkRateLimit()) {
+      toast.error("Too many requests. Please wait a moment before trying again.");
       return;
     }
 
@@ -45,7 +73,7 @@ export default function ProposalStatus() {
         toast.info("No proposals found for this email");
       }
     } catch (error) {
-      console.error("Error fetching proposals:", error);
+      // Don't log detailed error to console - use generic message
       toast.error("Failed to fetch proposal status");
     } finally {
       setIsLoading(false);
