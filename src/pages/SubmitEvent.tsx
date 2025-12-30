@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Calendar, MapPin, CheckCircle2, Instagram } from "lucide-react";
+import { Send, Calendar, MapPin, CheckCircle2, Instagram, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FormData {
@@ -41,6 +41,7 @@ export default function SubmitEvent() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null);
   
   const [formData, setFormData] = useState<FormData>({
@@ -81,24 +82,29 @@ export default function SubmitEvent() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("event_proposals").insert([{
-        name: formData.name,
-        email: formData.email,
-        instagram_handle: formData.instagram_handle || null,
-        city: formData.city,
-        event_concept: formData.event_concept,
-        preferred_date: formData.preferred_date,
-        fee_model: formData.fee_model,
-        profit_summary: profitSummary ? JSON.parse(JSON.stringify(profitSummary)) : null,
-        status: "pending",
-      }]);
+      const { data, error } = await supabase.functions.invoke("submit-proposal", {
+        body: {
+          submitter_name: formData.name,
+          submitter_email: formData.email,
+          instagram_handle: formData.instagram_handle || null,
+          city: formData.city,
+          event_concept: formData.event_concept,
+          preferred_event_date: formData.preferred_date,
+          fee_model: formData.fee_model,
+          full_calculator_json: profitSummary || null,
+          projected_revenue: profitSummary?.totalRevenue || null,
+          projected_costs: profitSummary?.totalCosts || null,
+          projected_profit: profitSummary?.yourTakeHome || null,
+        },
+      });
 
       if (error) throw error;
 
       setIsSubmitted(true);
+      setIsNewUser(data?.is_new_user ?? false);
       toast({
         title: "Proposal Submitted!",
-        description: "We'll review your event and get back to you soon.",
+        description: data?.message || "We'll review your event and get back to you soon.",
       });
     } catch (error) {
       console.error("Error submitting proposal:", error);
@@ -140,6 +146,23 @@ export default function SubmitEvent() {
                 Thank you for your interest in hosting an event with Clubless Collective.
               </p>
 
+              {/* Email Check Prompt */}
+              <div className="glass rounded-2xl p-6 mb-8 border border-primary/20">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <Mail className="w-6 h-6 text-primary" />
+                  <h2 className="font-display text-xl font-semibold">Check Your Email</h2>
+                </div>
+                <p className="text-muted-foreground">
+                  {isNewUser 
+                    ? "We've sent you a magic link to access your Host Portal. Click the link in your email to view your dashboard and track your proposal."
+                    : "Sign in to your Host Portal to track your proposal status and manage your events."
+                  }
+                </p>
+                <Button variant="gradient" size="lg" className="mt-4" asChild>
+                  <Link to="/portal/login">Go to Host Portal</Link>
+                </Button>
+              </div>
+
               <div className="glass rounded-2xl p-8 text-left mb-8">
                 <h2 className="font-display text-xl font-semibold mb-4">What Happens Next?</h2>
                 <ol className="space-y-4 text-muted-foreground">
@@ -166,8 +189,8 @@ export default function SubmitEvent() {
                 We'll send updates to <strong className="text-foreground">{formData.email}</strong>
               </p>
 
-              <Button variant="gradient" size="lg" asChild>
-                <a href="/">Return to Home</a>
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/">Return to Home</Link>
               </Button>
             </div>
           </div>
