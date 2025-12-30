@@ -224,7 +224,28 @@ serve(async (req: Request): Promise<Response> => {
   EdgeRuntime.waitUntil(sendAdminNotification(supabaseAdmin, RESEND_API_KEY, email, name));
 
   try {
-    // Personal, plain-text style welcome email from Andrew
+    // Personal welcome email from Andrew - optimized for deliverability
+    // Using both HTML and plain text versions to improve deliverability
+    const plainText = `Hey ${firstName},
+
+You just took the first step toward reclaiming your power as a creative.
+
+No more splitting the door with venues that do nothing. No more guessing if the numbers will work. No more waiting for permission.
+
+Clubless Collective exists because creatives like you deserve to own the full experience — the event, the audience, the profit. All of it.
+
+Your account is ready. When you have an idea, bring it here:
+${portalLink}
+
+We handle the venue, the ticketing, the backend — you bring the vision. And when the night is over, the money goes where it belongs: to you.
+
+If you ever get stuck or just want to talk through an idea, hit reply. This goes straight to my inbox.
+
+Let's build something.
+
+— Andrew
+Founder, Clubless Collective`;
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -232,26 +253,40 @@ serve(async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Andrew Green <andrew@clublesscollective.com>",
+        from: "Andrew @ Clubless Collective <andrew@clublesscollective.com>",
         reply_to: "andrew@clublesscollective.com",
         to: [email],
-        subject: "Welcome to Clubless Collective",
+        subject: "You're in — let's reclaim your power",
+        text: plainText,
         html: `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+<div style="font-family: Georgia, 'Times New Roman', serif; max-width: 580px; margin: 0 auto; padding: 24px; color: #1a1a1a; line-height: 1.7;">
+  <p style="font-size: 17px; margin-bottom: 20px;">Hey ${firstName},</p>
   
-  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Thanks for taking this step. You are taking back control as a creative — the venue, the money, the experience — all on your terms.</p>
+  <p style="font-size: 17px; margin-bottom: 20px;"><strong>You just took the first step toward reclaiming your power as a creative.</strong></p>
   
-  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Your account is set up. Whenever you are ready, submit an event idea and track it in your dashboard here:</p>
+  <p style="font-size: 17px; margin-bottom: 20px;">No more splitting the door with venues that do nothing. No more guessing if the numbers will work. No more waiting for permission.</p>
   
-  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;"><a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+  <p style="font-size: 17px; margin-bottom: 20px;">Clubless Collective exists because creatives like you deserve to own the full experience — the event, the audience, the profit. <em>All of it.</em></p>
   
-  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">If you ever get stuck, just reply to this email and it will come straight to me.</p>
+  <p style="font-size: 17px; margin-bottom: 20px;">Your account is ready. When you have an idea, bring it here:</p>
   
-  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">— Andrew</p>
+  <p style="margin: 28px 0;">
+    <a href="${portalLink}" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 28px; text-decoration: none; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; border-radius: 4px;">Open Your Dashboard</a>
+  </p>
   
-  <p style="font-size: 13px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-    Clubless Collective — Host your event, keep your profit.
+  <p style="font-size: 17px; margin-bottom: 20px;">We handle the venue, the ticketing, the backend — you bring the vision. And when the night is over, the money goes where it belongs: <strong>to you.</strong></p>
+  
+  <p style="font-size: 17px; margin-bottom: 20px;">If you ever get stuck or just want to talk through an idea, hit reply. This goes straight to my inbox.</p>
+  
+  <p style="font-size: 17px; margin-bottom: 20px;">Let's build something.</p>
+  
+  <p style="font-size: 17px; margin-bottom: 4px;">— Andrew</p>
+  <p style="font-size: 14px; color: #666; margin-top: 0;">Founder, Clubless Collective</p>
+  
+  <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px 0;" />
+  <p style="font-size: 13px; color: #888;">
+    Clubless Collective · Host your event, keep your profit<br/>
+    <a href="${portalLink}" style="color: #888;">clublesscollective.com</a>
   </p>
 </div>
         `,
