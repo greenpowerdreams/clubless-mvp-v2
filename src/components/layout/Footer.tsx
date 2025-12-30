@@ -1,9 +1,11 @@
+import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 import { Instagram, Twitter, Mail } from "lucide-react";
 import logo from "@/assets/logo.png";
 
-export function Footer() {
-  return (
+export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
+  function Footer(props, ref) {
+    return (
     <footer className="border-t border-border bg-card/50">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -107,5 +109,6 @@ export function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
+    );
+  }
+);

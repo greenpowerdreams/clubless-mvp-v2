@@ -13,11 +13,13 @@ const corsHeaders = {
 };
 
 const ADMIN_EMAIL = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "aj33green7@gmail.com";
+const SITE_URL = "https://clublesscollective.com";
 
 // Input validation schema
 const WelcomeEmailRequestSchema = z.object({
   email: z.string().trim().email("Invalid email address").max(255, "Email too long"),
   name: z.string().trim().min(1, "Name is required").max(100, "Name too long"),
+  user_id: z.string().uuid("Invalid user ID"),
 });
 
 type WelcomeEmailRequest = z.infer<typeof WelcomeEmailRequestSchema>;
@@ -46,6 +48,29 @@ async function logEmail(
   }
 }
 
+// Check for duplicate welcome emails (idempotency)
+async function hasWelcomeEmailBeenSent(supabase: any, email: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("email_logs")
+      .select("id")
+      .eq("to_email", email.toLowerCase())
+      .eq("template_name", "welcome")
+      .eq("status", "sent")
+      .limit(1);
+    
+    if (error) {
+      console.error("Error checking for duplicate welcome email:", error);
+      return false; // Proceed if we can't check
+    }
+    
+    return data && data.length > 0;
+  } catch (err) {
+    console.error("Exception checking for duplicate:", err);
+    return false;
+  }
+}
+
 // Send admin notification (non-blocking)
 async function sendAdminNotification(
   supabase: any,
@@ -53,8 +78,7 @@ async function sendAdminNotification(
   userEmail: string,
   userName: string
 ) {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
-  const adminLink = `${siteUrl}/admin`;
+  const adminLink = `${SITE_URL}/admin`;
   const createdAt = new Date().toLocaleString("en-US", { 
     timeZone: "America/Los_Angeles",
     dateStyle: "medium",
@@ -75,6 +99,17 @@ async function sendAdminNotification(
         reply_to: "andrew@clublesscollective.com",
         to: [ADMIN_EMAIL],
         subject: `New signup – ${userEmail}`,
+        text: `Hey Andrew,
+
+A new user just created an account on Clubless Collective.
+
+Name: ${userName}
+Email: ${userEmail}
+Signup time: ${createdAt}
+
+View in admin: ${adminLink}
+
+— Clubless System`,
         html: `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
   <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey Andrew,</p>
@@ -100,13 +135,13 @@ async function sendAdminNotification(
 
     if (res.ok) {
       console.log("send_admin_notification: Signup notification sent to admin");
-      await logEmail(supabase, ADMIN_EMAIL, "admin_notification", "sent", resData.id, undefined, { 
+      await logEmail(supabase, ADMIN_EMAIL, "admin_signup_notification", "sent", resData.id, undefined, { 
         trigger: "signup", 
         user_email: userEmail 
       });
     } else {
       console.error("send_admin_notification: Failed to send:", resData);
-      await logEmail(supabase, ADMIN_EMAIL, "admin_notification", "failed", undefined, resData.message, { 
+      await logEmail(supabase, ADMIN_EMAIL, "admin_signup_notification", "failed", undefined, resData.message, { 
         trigger: "signup", 
         user_email: userEmail 
       });
@@ -114,7 +149,7 @@ async function sendAdminNotification(
   } catch (error) {
     console.error("send_admin_notification: Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    await logEmail(supabase, ADMIN_EMAIL, "admin_notification", "failed", undefined, errorMessage, { 
+    await logEmail(supabase, ADMIN_EMAIL, "admin_signup_notification", "failed", undefined, errorMessage, { 
       trigger: "signup", 
       user_email: userEmail 
     });
@@ -128,42 +163,11 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-  // ============================================
-  // AUTHENTICATION CHECK - User must be authenticated
-  // ============================================
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    console.error("send_welcome_email: No authorization header");
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  }
-
-  // Create client with user's auth token to verify identity
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-  if (authError || !user) {
-    console.error("send_welcome_email: Invalid auth token:", authError?.message);
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  }
-
-  console.log("send_welcome_email: User verified:", user.email);
-  // ============================================
-
-  // Service role client for email logging
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  // Service role client for all operations (no JWT required - function is called internally)
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
@@ -180,7 +184,7 @@ serve(async (req: Request): Promise<Response> => {
   try {
     rawBody = await req.json();
   } catch (e) {
-    console.error("Invalid JSON in request:", e);
+    console.error("send_welcome_email: Invalid JSON in request:", e);
     return new Response(
       JSON.stringify({ success: false, error: "Invalid request body" }),
       { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -192,59 +196,68 @@ serve(async (req: Request): Promise<Response> => {
   
   if (!validationResult.success) {
     const errors = validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
-    console.error("Validation failed:", errors);
+    console.error("send_welcome_email: Validation failed:", errors);
     return new Response(
       JSON.stringify({ success: false, error: `Validation failed: ${errors}` }),
       { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 
-  const { email, name } = validationResult.data;
+  const { email, name, user_id } = validationResult.data;
 
-  // ============================================
-  // SECURITY: Verify user's email matches requested email
-  // Prevent users from sending welcome emails to arbitrary addresses
-  // ============================================
-  if (user.email?.toLowerCase() !== email.toLowerCase()) {
-    console.error("send_welcome_email: Email mismatch - user:", user.email, "requested:", email);
+  // Verify user exists in auth.users using service role
+  const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user_id);
+  
+  if (userError || !userData.user) {
+    console.error("send_welcome_email: User not found:", user_id, userError?.message);
     return new Response(
-      JSON.stringify({ success: false, error: "Cannot send welcome email to different address" }),
+      JSON.stringify({ success: false, error: "User not found" }),
+      { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+
+  // Verify email matches
+  if (userData.user.email?.toLowerCase() !== email.toLowerCase()) {
+    console.error("send_welcome_email: Email mismatch - db:", userData.user.email, "requested:", email);
+    return new Response(
+      JSON.stringify({ success: false, error: "Email mismatch" }),
       { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
-  // ============================================
+
+  // Idempotency check: skip if welcome email already sent
+  const alreadySent = await hasWelcomeEmailBeenSent(supabase, email);
+  if (alreadySent) {
+    console.log("send_welcome_email: Welcome email already sent to:", email);
+    return new Response(
+      JSON.stringify({ success: true, message: "Welcome email already sent", skipped: true }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
 
   const firstName = name.split(" ")[0] || "there";
-  const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
-  const portalLink = `${siteUrl}/portal`;
+  const portalLink = `${SITE_URL}/portal`;
 
   console.log("send_welcome_email: Sending to:", email);
 
+  // Log attempt
+  await logEmail(supabase, email, "welcome", "attempted", undefined, undefined, { user_id });
+
   // Send admin notification in background (non-blocking)
-  EdgeRuntime.waitUntil(sendAdminNotification(supabaseAdmin, RESEND_API_KEY, email, name));
+  EdgeRuntime.waitUntil(sendAdminNotification(supabase, RESEND_API_KEY, email, name));
 
   try {
-    // Personal welcome email from Andrew - optimized for deliverability
-    // Using both HTML and plain text versions to improve deliverability
+    // Personal welcome email from Andrew - EXACT copy as specified
     const plainText = `Hey ${firstName},
 
-You just took the first step toward reclaiming your power as a creative.
+Thanks for taking this step. You're taking back control as a creative — the venue, the money, the experience — all on your terms.
 
-No more splitting the door with venues that do nothing. No more guessing if the numbers will work. No more waiting for permission.
-
-Clubless Collective exists because creatives like you deserve to own the full experience — the event, the audience, the profit. All of it.
-
-Your account is ready. When you have an idea, bring it here:
+Your account is ready. You can submit events and track everything here:
 ${portalLink}
 
-We handle the venue, the ticketing, the backend — you bring the vision. And when the night is over, the money goes where it belongs: to you.
+If you ever need help, just reply to this email.
 
-If you ever get stuck or just want to talk through an idea, hit reply. This goes straight to my inbox.
-
-Let's build something.
-
-— Andrew
-Founder, Clubless Collective`;
+— Andrew`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -256,38 +269,20 @@ Founder, Clubless Collective`;
         from: "Andrew @ Clubless Collective <andrew@clublesscollective.com>",
         reply_to: "andrew@clublesscollective.com",
         to: [email],
-        subject: "You're in — let's reclaim your power",
+        subject: "Welcome to Clubless Collective",
         text: plainText,
         html: `
-<div style="font-family: Georgia, 'Times New Roman', serif; max-width: 580px; margin: 0 auto; padding: 24px; color: #1a1a1a; line-height: 1.7;">
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; color: #1a1a1a; line-height: 1.7;">
   <p style="font-size: 17px; margin-bottom: 20px;">Hey ${firstName},</p>
   
-  <p style="font-size: 17px; margin-bottom: 20px;"><strong>You just took the first step toward reclaiming your power as a creative.</strong></p>
+  <p style="font-size: 17px; margin-bottom: 20px;">Thanks for taking this step. You're taking back control as a creative — the venue, the money, the experience — all on your terms.</p>
   
-  <p style="font-size: 17px; margin-bottom: 20px;">No more splitting the door with venues that do nothing. No more guessing if the numbers will work. No more waiting for permission.</p>
+  <p style="font-size: 17px; margin-bottom: 20px;">Your account is ready. You can submit events and track everything here:<br/>
+  <a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
   
-  <p style="font-size: 17px; margin-bottom: 20px;">Clubless Collective exists because creatives like you deserve to own the full experience — the event, the audience, the profit. <em>All of it.</em></p>
-  
-  <p style="font-size: 17px; margin-bottom: 20px;">Your account is ready. When you have an idea, bring it here:</p>
-  
-  <p style="margin: 28px 0;">
-    <a href="${portalLink}" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 28px; text-decoration: none; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; border-radius: 4px;">Open Your Dashboard</a>
-  </p>
-  
-  <p style="font-size: 17px; margin-bottom: 20px;">We handle the venue, the ticketing, the backend — you bring the vision. And when the night is over, the money goes where it belongs: <strong>to you.</strong></p>
-  
-  <p style="font-size: 17px; margin-bottom: 20px;">If you ever get stuck or just want to talk through an idea, hit reply. This goes straight to my inbox.</p>
-  
-  <p style="font-size: 17px; margin-bottom: 20px;">Let's build something.</p>
+  <p style="font-size: 17px; margin-bottom: 20px;">If you ever need help, just reply to this email.</p>
   
   <p style="font-size: 17px; margin-bottom: 4px;">— Andrew</p>
-  <p style="font-size: 14px; color: #666; margin-top: 0;">Founder, Clubless Collective</p>
-  
-  <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px 0;" />
-  <p style="font-size: 13px; color: #888;">
-    Clubless Collective · Host your event, keep your profit<br/>
-    <a href="${portalLink}" style="color: #888;">clublesscollective.com</a>
-  </p>
 </div>
         `,
       }),
@@ -296,8 +291,8 @@ Founder, Clubless Collective`;
     const resData = await res.json();
 
     if (res.ok) {
-      console.log("send_welcome_email: Email sent successfully to:", email);
-      await logEmail(supabaseAdmin, email, "welcome", "sent", resData.id);
+      console.log("send_welcome_email: Email sent successfully to:", email, "message_id:", resData.id);
+      await logEmail(supabase, email, "welcome", "sent", resData.id, undefined, { user_id });
       
       return new Response(
         JSON.stringify({ success: true, message_id: resData.id }),
@@ -305,7 +300,7 @@ Founder, Clubless Collective`;
       );
     } else {
       console.error("send_welcome_email: Resend API error:", resData);
-      await logEmail(supabaseAdmin, email, "welcome", "failed", undefined, resData.message);
+      await logEmail(supabase, email, "welcome", "failed", undefined, resData.message, { user_id });
       
       return new Response(
         JSON.stringify({ success: false, error: resData.message }),
@@ -315,7 +310,7 @@ Founder, Clubless Collective`;
   } catch (error) {
     console.error("send_welcome_email: Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    await logEmail(supabaseAdmin, email, "welcome", "failed", undefined, errorMessage);
+    await logEmail(supabase, email, "welcome", "failed", undefined, errorMessage, { user_id });
     
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),

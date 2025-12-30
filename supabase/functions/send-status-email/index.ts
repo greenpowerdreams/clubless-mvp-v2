@@ -295,7 +295,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const firstName = proposal.submitter_name?.split(" ")[0] || "there";
-    const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+    const siteUrl = "https://clublesscollective.com";
     const portalLink = `${siteUrl}/portal/events/${proposal.id}`;
 
     const emailContent = getStatusEmail(new_status, firstName, proposal.city, portalLink, status_notes ?? undefined);
