@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const navLinks = [
@@ -14,7 +15,22 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setIsLoggedIn(!!session);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
@@ -45,13 +61,33 @@ export function Navbar() {
                 {link.name}
               </Link>
             ))}
+            {isLoggedIn && (
+              <Link
+                to="/portal"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5",
+                  location.pathname.startsWith("/portal")
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                <User className="w-4 h-4" />
+                Host Portal
+              </Link>
+            )}
           </div>
 
           {/* Desktop CTA */}
           <div className="hidden md:block">
-            <Button variant="gradient" size="sm" asChild>
-              <Link to="/submit">Join The Collective</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/portal">My Dashboard</Link>
+              </Button>
+            ) : (
+              <Button variant="gradient" size="sm" asChild>
+                <Link to="/submit">Join The Collective</Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -82,11 +118,34 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <Button variant="gradient" className="mt-2" asChild>
-                <Link to="/submit" onClick={() => setIsOpen(false)}>
-                  Join The Collective
+              {isLoggedIn && (
+                <Link
+                  to="/portal"
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "text-base font-medium transition-colors hover:text-primary py-2 flex items-center gap-2",
+                    location.pathname.startsWith("/portal")
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  <User className="w-4 h-4" />
+                  Host Portal
                 </Link>
-              </Button>
+              )}
+              {isLoggedIn ? (
+                <Button variant="outline" className="mt-2" asChild>
+                  <Link to="/portal" onClick={() => setIsOpen(false)}>
+                    My Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="gradient" className="mt-2" asChild>
+                  <Link to="/submit" onClick={() => setIsOpen(false)}>
+                    Join The Collective
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
