@@ -18,6 +18,7 @@ interface ProposalSubmission {
   projected_revenue?: number;
   projected_costs?: number;
   projected_profit?: number;
+  user_id?: string; // Now passed from frontend when user is logged in
 }
 
 // Helper to log errors to the error_logs table
@@ -39,6 +40,30 @@ async function logError(
     });
   } catch (logError) {
     console.error("Failed to log error:", logError);
+  }
+}
+
+// Helper to log emails
+async function logEmail(
+  supabase: any,
+  toEmail: string,
+  templateName: string,
+  status: string,
+  providerMessageId?: string,
+  error?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await supabase.from("email_logs").insert({
+      to_email: toEmail,
+      template_name: templateName,
+      status,
+      provider_message_id: providerMessageId,
+      error: error,
+      metadata: metadata,
+    });
+  } catch (err) {
+    console.error("Failed to log email:", err);
   }
 }
 
@@ -71,6 +96,7 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const email = submission.submitter_email?.toLowerCase().trim();
+  const firstName = submission.submitter_name?.split(" ")[0] || "there";
   
   if (!email || !submission.submitter_name || !submission.city || !submission.event_concept || !submission.preferred_event_date || !submission.fee_model) {
     console.error("Missing required fields:", { email, name: submission.submitter_name, city: submission.city });
@@ -80,141 +106,14 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  console.log("submit_proposal: Received submission", { email, city: submission.city });
+  console.log("submit_proposal: Received submission", { email, city: submission.city, user_id: submission.user_id });
 
-  let userId: string | null = null;
-  let isNewUser = false;
+  // Use the user_id passed from frontend (user is already logged in)
+  const userId = submission.user_id || null;
   let emailSent = false;
-  let emailError: string | null = null;
+  let emailError: string | undefined = undefined;
 
   try {
-    // Check if user already exists
-    console.log("submit_proposal: Looking up existing users");
-    const { data: existingUsers, error: lookupError } = await supabase.auth.admin.listUsers();
-    
-    if (lookupError) {
-      console.error("submit_proposal: Error looking up users:", lookupError);
-      await logError(supabase, "user_lookup_failed", email, null, lookupError.message);
-      throw lookupError;
-    }
-
-    const existingUser = existingUsers.users.find(
-      (u) => u.email?.toLowerCase() === email
-    );
-
-    if (existingUser) {
-      console.log("submit_proposal: Found existing user:", existingUser.id);
-      userId = existingUser.id;
-    } else {
-      // Create new user with magic link
-      console.log("create_or_link_user: Creating new user for:", email);
-      
-      const tempPassword = crypto.randomUUID();
-      
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: email,
-        password: tempPassword,
-        email_confirm: false,
-        user_metadata: {
-          full_name: submission.submitter_name,
-        },
-      });
-
-      if (createError) {
-        console.error("create_or_link_user: Error creating user:", createError);
-        await logError(supabase, "user_creation_failed", email, null, createError.message);
-        throw createError;
-      }
-
-      userId = newUser.user.id;
-      isNewUser = true;
-      console.log("create_or_link_user: Created new user:", userId);
-
-      // Generate and send magic link email
-      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-      const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
-      
-      try {
-        const { data: linkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: email,
-          options: {
-            redirectTo: `${siteUrl}/portal`,
-          },
-        });
-
-        if (magicLinkError) {
-          console.error("send_email: Error generating magic link:", magicLinkError);
-          emailError = magicLinkError.message;
-        } else if (linkData?.properties?.action_link && RESEND_API_KEY) {
-          console.log("send_email: Sending welcome email to:", email);
-          
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-              from: "Andrew @ Clubless Collective <andrew@clublesscollective.com>",
-              reply_to: "andrew@clublesscollective.com",
-              to: [email],
-              subject: "Welcome to Clubless Collective! Access Your Dashboard",
-              html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0f; color: #ffffff;">
-                  <h1 style="color: #bb86fc; margin-bottom: 24px;">Welcome to Clubless Collective, ${submission.submitter_name}!</h1>
-                  <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
-                    Your event proposal for <strong style="color: #ffffff;">${submission.city}</strong> has been submitted successfully.
-                  </p>
-                  <div style="background: #1a1a2e; border-radius: 12px; padding: 16px; margin: 20px 0;">
-                    <p style="color: #a1a1aa; font-size: 14px; margin: 0;">
-                      <strong style="color: #ffffff;">Event Date:</strong> ${submission.preferred_event_date}<br/>
-                      <strong style="color: #ffffff;">Fee Model:</strong> ${submission.fee_model === 'profit-share' ? 'Profit Share (50/50)' : 'Service Fee (15%)'}<br/>
-                      ${submission.projected_profit ? `<strong style="color: #ffffff;">Projected Profit:</strong> $${submission.projected_profit.toLocaleString()}` : ''}
-                    </p>
-                  </div>
-                  <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
-                    Click the button below to access your Host Portal and track your proposal:
-                  </p>
-                  <div style="text-align: center; margin: 32px 0;">
-                    <a href="${linkData.properties.action_link}" 
-                       style="background: linear-gradient(135deg, #bb86fc, #ff6bcb); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
-                      Access Your Dashboard
-                    </a>
-                  </div>
-                  <p style="color: #71717a; font-size: 14px;">
-                    This link will expire in 24 hours. If you didn't submit an event proposal, you can safely ignore this email.
-                  </p>
-                  <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
-                  <p style="color: #52525b; font-size: 12px; text-align: center;">
-                    Clubless Collective — Host your event, keep your profit.
-                  </p>
-                </div>
-              `,
-            }),
-          });
-          
-          if (res.ok) {
-            console.log("send_email: Welcome email sent successfully to:", email);
-            emailSent = true;
-          } else {
-            const errorData = await res.json();
-            console.error("send_email: Resend API error:", errorData);
-            emailError = errorData.message || "Email sending failed";
-            await logError(supabase, "email_send_failed", email, userId, emailError || "Unknown email error", { resendError: errorData });
-          }
-        } else if (!RESEND_API_KEY) {
-          console.error("send_email: RESEND_API_KEY not configured");
-          emailError = "Email service not configured";
-          await logError(supabase, "email_config_error", email, userId, "RESEND_API_KEY not configured");
-        }
-      } catch (emailErr) {
-        console.error("send_email: Error in email flow:", emailErr);
-        emailError = emailErr instanceof Error ? emailErr.message : "Unknown email error";
-        await logError(supabase, "email_exception", email, userId, emailError);
-      }
-    }
-
     // Insert the proposal with user_id
     console.log("submit_proposal: Inserting proposal for user:", userId);
     const { data: proposal, error: insertError } = await supabase
@@ -248,23 +147,89 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log("submit_proposal: Proposal created successfully:", proposal.id);
 
-    // Determine response message based on email status
-    let message: string;
-    if (isNewUser && emailSent) {
-      message = "Check your email to access your dashboard.";
-    } else if (isNewUser && !emailSent) {
-      message = "Proposal submitted! Email delivery pending - please use the portal login to access your dashboard.";
+    // Send confirmation email
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const siteUrl = Deno.env.get("SITE_URL") || "https://clublesscollective.lovable.app";
+    const portalLink = `${siteUrl}/portal/events/${proposal.id}`;
+    const feeModelLabel = submission.fee_model === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)";
+    const projectedProfitText = submission.projected_profit 
+      ? `$${submission.projected_profit.toLocaleString()}` 
+      : "TBD";
+
+    if (RESEND_API_KEY) {
+      try {
+        console.log("send_email: Sending confirmation email to:", email);
+        
+        // Personal, plain-text style email from Andrew
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "Andrew Green <andrew@clublesscollective.com>",
+            reply_to: "andrew@clublesscollective.com",
+            to: [email],
+            subject: `Got your event proposal for ${submission.city}`,
+            html: `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hey ${firstName},</p>
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Just confirming I got your event proposal. Here are the details:</p>
+  
+  <div style="background: #f8f8f8; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 15px; line-height: 1.8;">
+    <strong>City:</strong> ${submission.city}<br/>
+    <strong>Preferred Date:</strong> ${submission.preferred_event_date}<br/>
+    <strong>Fee Model:</strong> ${feeModelLabel}<br/>
+    <strong>Projected Profit:</strong> ${projectedProfitText}
+  </div>
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">I review every submission personally. You will hear back from me within 48 hours.</p>
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Track your proposal here:<br/>
+  <a href="${portalLink}" style="color: #7c3aed;">${portalLink}</a></p>
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">Talk soon,</p>
+  <p style="font-size: 16px; line-height: 1.6; margin: 0;"><strong>Andrew</strong></p>
+  
+  <p style="font-size: 13px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+    Clubless Collective — Host your event, keep your profit.
+  </p>
+</div>
+            `,
+          }),
+        });
+        
+        const resData = await res.json();
+        
+        if (res.ok) {
+          console.log("send_email: Confirmation email sent successfully to:", email);
+          emailSent = true;
+          await logEmail(supabase, email, "event_submission_confirmation", "sent", resData.id);
+        } else {
+          console.error("send_email: Resend API error:", resData);
+          emailError = resData.message || "Email sending failed";
+          await logEmail(supabase, email, "event_submission_confirmation", "failed", undefined, emailError);
+        }
+      } catch (emailErr) {
+        console.error("send_email: Error in email flow:", emailErr);
+        emailError = emailErr instanceof Error ? emailErr.message : "Unknown email error";
+        await logEmail(supabase, email, "event_submission_confirmation", "failed", undefined, emailError);
+      }
     } else {
-      message = "Proposal submitted! Sign in to view your dashboard.";
+      console.error("send_email: RESEND_API_KEY not configured");
+      emailError = "Email service not configured";
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         proposal_id: proposal.id,
-        is_new_user: isNewUser,
         email_sent: emailSent,
-        message,
+        message: emailSent 
+          ? "Proposal submitted! Check your email for confirmation." 
+          : "Proposal submitted! View your dashboard to track status.",
       }),
       {
         status: 200,
