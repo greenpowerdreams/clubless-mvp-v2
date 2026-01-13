@@ -18,6 +18,11 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutCancel from "./pages/CheckoutCancel";
+import ProfileSettings from "./pages/ProfileSettings";
+import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +34,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/submit" element={<SubmitEvent />} />
@@ -42,6 +49,9 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/checkout/success" element={<CheckoutSuccess />} />
+          <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+          <Route path="/profile" element={<ProfileSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

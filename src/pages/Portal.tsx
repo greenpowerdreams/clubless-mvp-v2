@@ -19,7 +19,8 @@ import {
   Shield,
   Clock,
   DollarSign,
-  Mail
+  Mail,
+  Settings
 } from "lucide-react";
 
 interface EventProposal {
@@ -217,10 +218,18 @@ export default function Portal() {
                   Manage your events and track your progress
                 </p>
               </div>
-              <Button variant="outline" onClick={handleSignOut} className="w-fit">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" asChild className="w-fit">
+                  <Link to="/profile">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                </Button>
+                <Button variant="outline" onClick={handleSignOut} className="w-fit">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
             </div>
 
             {/* Level & Stats Cards */}
