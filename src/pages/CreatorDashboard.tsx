@@ -204,13 +204,13 @@ export default function CreatorDashboard() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
               <div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-                  Creator <span className="text-gradient">Dashboard</span>
+                  Creator <span className="text-primary">Dashboard</span>
                 </h1>
                 <p className="text-muted-foreground">
                   Manage your events, track sales, and view payouts
                 </p>
               </div>
-              <Button variant="gradient" asChild>
+              <Button variant="default" asChild>
                 <Link to="/submit">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Event
@@ -285,7 +285,7 @@ export default function CreatorDashboard() {
                   <p className="text-muted-foreground mb-4">
                     Create your first event to start selling tickets
                   </p>
-                  <Button variant="gradient" asChild>
+                  <Button variant="default" asChild>
                     <Link to="/submit">Create Event</Link>
                   </Button>
                 </CardContent>

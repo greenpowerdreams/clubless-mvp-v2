@@ -81,7 +81,7 @@ export default function ForgotPassword() {
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
               <h1 className="font-display text-3xl font-bold mb-2">
-                Reset Your <span className="text-gradient">Password</span>
+                Reset Your <span className="text-primary">Password</span>
               </h1>
               <p className="text-muted-foreground">
                 Enter your email and we'll send you a reset link
@@ -108,7 +108,7 @@ export default function ForgotPassword() {
 
                 <Button
                   type="submit"
-                  variant="gradient"
+                  variant="default"
                   className="w-full"
                   disabled={isLoading}
                 >

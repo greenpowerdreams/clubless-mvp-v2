@@ -268,7 +268,7 @@ export default function SubmitEvent() {
               </div>
               
               <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-                Proposal <span className="text-gradient">Submitted!</span>
+                Proposal <span className="text-primary">Submitted!</span>
               </h1>
               
               <p className="text-lg text-muted-foreground mb-8">
@@ -283,7 +283,7 @@ export default function SubmitEvent() {
                 <p className="text-muted-foreground mb-4">
                   Track your proposal status and manage your events in your Host Portal.
                 </p>
-                <Button variant="gradient" size="lg" asChild>
+                <Button variant="default" size="lg" asChild>
                   {proposalId ? (
                     <Link to={`/portal/events/${proposalId}`}>View Proposal</Link>
                   ) : (
@@ -340,7 +340,7 @@ export default function SubmitEvent() {
           </DialogHeader>
           <div className="space-y-3 pt-4">
             <Button 
-              variant="gradient" 
+              variant="default" 
               className="w-full"
               onClick={() => handleAuthRedirect("signup")}
             >
@@ -362,7 +362,7 @@ export default function SubmitEvent() {
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
               <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-                Submit Your <span className="text-gradient">Event Proposal</span>
+                Submit Your <span className="text-primary">Event Proposal</span>
               </h1>
               <p className="text-lg text-muted-foreground">
                 Tell us about your event idea. We'll review it and get back to
@@ -406,7 +406,7 @@ export default function SubmitEvent() {
               {/* Calculator Summary */}
               {profitSummary && (
                 <div className="relative rounded-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-primary opacity-90" />
+                  <div className="absolute inset-0 bg-primary opacity-90" />
                   <div className="relative z-10 p-6 md:p-8">
                     <h2 className="font-display text-xl font-semibold mb-4 text-primary-foreground">
                       Your Profit Projection
@@ -563,7 +563,7 @@ export default function SubmitEvent() {
               <div className="flex flex-col items-center gap-4">
                 <Button
                   type="submit"
-                  variant="gradient"
+                  variant="default"
                   size="xl"
                   disabled={isSubmitting}
                   className="w-full sm:w-auto min-w-[250px]"

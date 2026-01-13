@@ -145,7 +145,7 @@ export default function AdminAuth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
             <Zap className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="font-display text-3xl font-bold mb-2">
@@ -199,7 +199,7 @@ export default function AdminAuth() {
 
           <Button
             type="submit"
-            variant="gradient"
+            variant="default"
             size="lg"
             className="w-full"
             disabled={isLoading}

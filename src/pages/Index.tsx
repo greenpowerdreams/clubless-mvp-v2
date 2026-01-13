@@ -41,7 +41,7 @@ export default function Index() {
             </div>
 
             <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold mb-3 md:mb-6 animate-slide-up leading-tight">
-              <span className="text-gradient-brand">Clubless Collective</span>
+              <span className="text-primary">Clubless Collective</span>
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground/90 mb-2 animate-slide-up" style={{ animationDelay: "0.05s" }}>
               Mobile Bar, Catering & Events
@@ -53,7 +53,7 @@ export default function Index() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4 sm:px-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <Button variant="gradient" size="lg" asChild className="glow-primary w-full sm:w-auto">
+              <Button variant="default" size="lg" asChild className="w-full sm:w-auto">
                 <Link to="/submit">
                   Become a Host
                   <ArrowRight className="w-5 h-5" />
@@ -88,7 +88,7 @@ export default function Index() {
 
       {/* Value Props */}
       <section className="py-12 md:py-32 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/50 to-background" />
+        <div className="absolute inset-0 bg-card/50" />
         <div className="container px-4 sm:px-6 relative">
           <div className="text-center mb-10 md:mb-16">
             <p className="text-primary font-semibold uppercase tracking-wider text-xs md:text-sm mb-2 md:mb-3">
@@ -96,7 +96,7 @@ export default function Index() {
             </p>
             <h2 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4">
               Crafting Extraordinary{" "}
-              <span className="text-gradient">Moments</span>
+              <span className="text-primary">Moments</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-lg px-2">
               We give you the tools, licenses, and people to turn any space into 
@@ -149,7 +149,7 @@ export default function Index() {
       </section>
 
       {/* Artist-Controlled Events */}
-      <section className="py-12 md:py-20 bg-gradient-card border-y border-border relative overflow-hidden">
+      <section className="py-12 md:py-20 bg-card border-y border-border relative overflow-hidden">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-secondary/20 rounded-full blur-[80px] md:blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-48 md:w-80 h-48 md:h-80 bg-primary/20 rounded-full blur-[60px] md:blur-[100px]" />
@@ -157,7 +157,7 @@ export default function Index() {
         <div className="container px-4 sm:px-6 relative">
           <div className="text-center max-w-3xl mx-auto">
             <h2 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-4 md:mb-6">
-              <span className="text-gradient-brand">Artist-Controlled</span> Events
+              <span className="text-primary">Artist-Controlled</span> Events
             </h2>
             <p className="text-muted-foreground text-base md:text-lg mb-6 md:mb-8">
               You own your event. You set the vibe, curate the crowd, and keep the profits. 
@@ -185,7 +185,7 @@ export default function Index() {
               Simple Process
             </p>
             <h2 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4">
-              How It <span className="text-gradient">Works</span>
+              How It <span className="text-primary">Works</span>
             </h2>
           </div>
 
@@ -214,7 +214,7 @@ export default function Index() {
               },
             ].map((item, index) => (
               <div key={index} className="relative group">
-                <div className="text-6xl md:text-8xl font-display font-bold text-gradient opacity-20 absolute -top-2 md:-top-4 -left-1 md:-left-2">
+                <div className="text-6xl md:text-8xl font-display font-bold text-primary/20 absolute -top-2 md:-top-4 -left-1 md:-left-2">
                   {item.step}
                 </div>
                 <div className="relative pt-10 md:pt-12 pl-3 md:pl-4">
@@ -231,7 +231,7 @@ export default function Index() {
           </div>
 
           <div className="text-center mt-8 md:mt-12">
-            <Button variant="gradient" size="default" asChild className="w-full sm:w-auto">
+            <Button variant="default" size="default" asChild className="w-full sm:w-auto">
               <Link to="/how-it-works">
                 Learn More
                 <ArrowRight className="w-5 h-5" />
@@ -245,7 +245,7 @@ export default function Index() {
       <section className="py-12 md:py-32">
         <div className="container px-4 sm:px-6">
           <div className="relative rounded-2xl md:rounded-3xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/80 to-accent opacity-90" />
+            <div className="absolute inset-0 bg-secondary opacity-90" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,transparent,rgba(0,0,0,0.4))]" />
             
             <div className="relative z-10 py-10 md:py-24 px-5 md:px-8 text-center">

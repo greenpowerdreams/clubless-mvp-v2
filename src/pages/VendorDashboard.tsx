@@ -347,7 +347,7 @@ export default function VendorDashboard() {
             <div className="max-w-2xl mx-auto text-center">
               <Store className="w-16 h-16 text-primary mx-auto mb-6" />
               <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">
-                Become a <span className="text-gradient">Vendor</span>
+                Become a <span className="text-primary">Vendor</span>
               </h1>
               <p className="text-muted-foreground mb-8">
                 Join our marketplace and offer your services to event creators. 
@@ -356,7 +356,7 @@ export default function VendorDashboard() {
 
               <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="gradient" size="lg">
+                  <Button variant="default" size="lg">
                     <Plus className="w-5 h-5 mr-2" />
                     Register as Vendor
                   </Button>
@@ -446,7 +446,7 @@ export default function VendorDashboard() {
                       onClick={handleRegisterVendor} 
                       disabled={saving}
                       className="w-full"
-                      variant="gradient"
+                      variant="default"
                     >
                       {saving ? "Creating..." : "Create Vendor Profile"}
                     </Button>
@@ -522,7 +522,7 @@ export default function VendorDashboard() {
               
               <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="gradient">
+                  <Button variant="default">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Service
                   </Button>
@@ -612,7 +612,7 @@ export default function VendorDashboard() {
                       onClick={handleAddService} 
                       disabled={saving}
                       className="w-full"
-                      variant="gradient"
+                      variant="default"
                     >
                       {saving ? "Adding..." : "Add Service"}
                     </Button>
@@ -703,7 +703,7 @@ export default function VendorDashboard() {
                       <p className="text-muted-foreground mb-4">
                         Add your first service to start receiving quote requests.
                       </p>
-                      <Button variant="gradient" onClick={() => setShowServiceDialog(true)}>
+                      <Button variant="default" onClick={() => setShowServiceDialog(true)}>
                         <Plus className="w-4 h-4 mr-2" />
                         Add Service
                       </Button>

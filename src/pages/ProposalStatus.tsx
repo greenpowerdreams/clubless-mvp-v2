@@ -108,7 +108,7 @@ export default function ProposalStatus() {
         <div className="container px-4 max-w-2xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">
-              Check Proposal <span className="text-gradient-brand">Status</span>
+              Check Proposal <span className="text-primary">Status</span>
             </h1>
             <p className="text-muted-foreground">
               Enter the email you used when submitting your event proposal to check its status.
@@ -128,7 +128,7 @@ export default function ProposalStatus() {
                   className="mt-1"
                 />
               </div>
-              <Button type="submit" variant="gradient" className="w-full" disabled={isLoading}>
+              <Button type="submit" variant="default" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   "Searching..."
                 ) : (
