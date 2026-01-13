@@ -23,6 +23,9 @@ import CheckoutCancel from "./pages/CheckoutCancel";
 import ProfileSettings from "./pages/ProfileSettings";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import CreatorDashboard from "./pages/CreatorDashboard";
+import VendorDashboard from "./pages/VendorDashboard";
+import VendorMarketplace from "./pages/VendorMarketplace";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +55,9 @@ const App = () => (
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           <Route path="/profile" element={<ProfileSettings />} />
+          <Route path="/creator" element={<CreatorDashboard />} />
+          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+          <Route path="/vendors" element={<VendorMarketplace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
