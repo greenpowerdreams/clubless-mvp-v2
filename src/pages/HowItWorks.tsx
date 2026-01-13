@@ -102,7 +102,7 @@ export default function HowItWorks() {
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              How <span className="text-gradient">Clubless</span> Works
+              How <span className="text-primary">Clubless</span> Works
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               We've simplified the event hosting process so you can focus on
@@ -123,12 +123,12 @@ export default function HowItWorks() {
               >
                 {/* Timeline Line */}
                 {index < steps.length - 1 && (
-                  <div className="absolute left-7 top-16 bottom-0 w-px bg-gradient-to-b from-primary/50 to-transparent" />
+                  <div className="absolute left-7 top-16 bottom-0 w-px bg-primary/30" />
                 )}
 
                 {/* Icon */}
                 <div className="flex-shrink-0">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/25">
+                  <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
                     <step.icon className="w-7 h-7 text-primary-foreground" />
                   </div>
                 </div>
@@ -161,12 +161,12 @@ export default function HowItWorks() {
       </section>
 
       {/* Fees */}
-      <section className="py-20 md:py-32 bg-gradient-card border-y border-border">
+      <section className="py-20 md:py-32 bg-card border-y border-border">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-                Simple, <span className="text-gradient">Transparent</span> Fees
+                Simple, <span className="text-primary">Transparent</span> Fees
               </h2>
               <p className="text-muted-foreground">
                 No hidden costs. Know exactly what you're paying before you
@@ -208,14 +208,14 @@ export default function HowItWorks() {
         <div className="container px-4">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
-              Ready to See Your <span className="text-gradient">Numbers?</span>
+              Ready to See Your <span className="text-primary">Numbers?</span>
             </h2>
             <p className="text-muted-foreground mb-8">
               Use our profit calculator to model your event and see exactly how
               much you could earn.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="gradient" size="lg" asChild>
+              <Button variant="default" size="lg" asChild>
                 <Link to="/calculator">
                   Try the Calculator
                   <ArrowRight className="w-5 h-5" />

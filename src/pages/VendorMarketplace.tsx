@@ -141,13 +141,13 @@ export default function VendorMarketplace() {
             {/* Header */}
             <div className="text-center mb-12">
               <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-                Vendor <span className="text-gradient">Marketplace</span>
+                Vendor <span className="text-primary">Marketplace</span>
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
                 Find trusted vendors for your events. From bartenders to photographers, 
                 all verified and ready to make your event amazing.
               </p>
-              <Button variant="gradient" asChild>
+              <Button variant="default" asChild>
                 <Link to="/vendor/dashboard">Become a Vendor</Link>
               </Button>
             </div>
@@ -228,7 +228,7 @@ export default function VendorMarketplace() {
                   return (
                     <Card key={vendor.id} className={`glass overflow-hidden group hover:border-primary/40 transition-colors ${vendor.featured ? "border-primary/40" : ""}`}>
                       {vendor.featured && (
-                        <div className="bg-gradient-primary text-primary-foreground text-xs font-medium px-3 py-1 text-center">
+                        <div className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 text-center">
                           ⭐ Featured Vendor
                         </div>
                       )}

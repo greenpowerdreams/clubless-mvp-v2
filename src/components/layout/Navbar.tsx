@@ -87,7 +87,7 @@ export function Navbar() {
                 <Link to="/portal">My Dashboard</Link>
               </Button>
             ) : (
-              <Button variant="gradient" size="sm" asChild>
+              <Button variant="default" size="sm" asChild>
                 <Link to="/submit">Become a Host</Link>
               </Button>
             )}
@@ -143,7 +143,7 @@ export function Navbar() {
                   </Link>
                 </Button>
               ) : (
-                <Button variant="gradient" className="mt-2" asChild>
+                <Button variant="default" className="mt-2" asChild>
                   <Link to="/submit" onClick={() => setIsOpen(false)}>
                     Become a Host
                   </Link>

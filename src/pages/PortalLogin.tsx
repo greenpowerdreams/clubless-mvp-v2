@@ -124,11 +124,11 @@ export default function PortalLogin() {
         <div className="container px-4">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-6">
                 <Sparkles className="w-8 h-8 text-primary-foreground" />
               </div>
               <h1 className="font-display text-3xl font-bold mb-2">
-                Magic Link <span className="text-gradient">Login</span>
+                Magic Link <span className="text-primary">Login</span>
               </h1>
               <p className="text-muted-foreground">
                 Sign in without a password
@@ -178,7 +178,7 @@ export default function PortalLogin() {
                   </div>
                   <Button
                     type="submit"
-                    variant="gradient"
+                    variant="default"
                     className="w-full"
                     disabled={isLoading}
                   >
@@ -204,7 +204,7 @@ export default function PortalLogin() {
                   </div>
                   <Button
                     type="submit"
-                    variant="gradient"
+                    variant="default"
                     className="w-full"
                     disabled={isLoading}
                   >

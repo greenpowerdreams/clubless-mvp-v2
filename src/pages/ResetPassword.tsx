@@ -82,7 +82,7 @@ export default function ResetPassword() {
               <p className="text-muted-foreground mb-6">
                 Your password has been updated successfully. You can now sign in with your new password.
               </p>
-              <Button variant="gradient" asChild className="w-full">
+              <Button variant="default" asChild className="w-full">
                 <Link to="/login">Go to Login</Link>
               </Button>
             </div>
@@ -99,7 +99,7 @@ export default function ResetPassword() {
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
               <h1 className="font-display text-3xl font-bold mb-2">
-                Set New <span className="text-gradient">Password</span>
+                Set New <span className="text-primary">Password</span>
               </h1>
               <p className="text-muted-foreground">
                 Choose a new password for your account
@@ -146,7 +146,7 @@ export default function ResetPassword() {
 
                 <Button
                   type="submit"
-                  variant="gradient"
+                  variant="default"
                   className="w-full"
                   disabled={isLoading}
                 >

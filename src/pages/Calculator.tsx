@@ -554,7 +554,7 @@ export default function Calculator() {
                           />
                         </div>
                         <Button
-                          variant="gradient"
+                          variant="default"
                           size="sm"
                           onClick={handleAutoFillStaffing}
                           className="gap-2"
@@ -1099,7 +1099,7 @@ export default function Calculator() {
             <div className="lg:col-span-2 space-y-6">
               {/* Main Profit Card */}
               <div className="relative rounded-2xl overflow-hidden sticky top-24">
-                <div className="absolute inset-0 bg-gradient-primary opacity-90" />
+                <div className="absolute inset-0 bg-primary opacity-90" />
                 <div className="relative z-10 p-6 md:p-8 text-center">
                   <p className="text-primary-foreground/70 text-sm uppercase tracking-wider mb-2">
                     You Take Home
@@ -1118,7 +1118,7 @@ export default function Calculator() {
                 <h3 className="font-display font-semibold mb-4">Profit Split</h3>
                 <div className="h-8 rounded-full overflow-hidden bg-secondary flex">
                   <div 
-                    className="h-full bg-gradient-primary transition-all duration-500 flex items-center justify-center text-xs font-medium text-primary-foreground"
+                    className="h-full bg-primary transition-all duration-500 flex items-center justify-center text-xs font-medium text-primary-foreground"
                     style={{ width: `${yourShareWidth}%` }}
                   >
                     {yourShareWidth > 20 && `You: ${yourShareWidth.toFixed(0)}%`}
@@ -1240,7 +1240,7 @@ export default function Calculator() {
               </div>
 
               {/* CTA */}
-              <Button variant="gradient" size="lg" className="w-full" asChild>
+              <Button variant="default" size="lg" className="w-full" asChild>
                 <Link 
                   to="/submit" 
                   state={{ 

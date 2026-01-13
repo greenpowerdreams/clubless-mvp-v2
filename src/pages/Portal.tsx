@@ -212,7 +212,7 @@ export default function Portal() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-                  Welcome back, <span className="text-gradient">{user?.user_metadata?.full_name || "Host"}</span>
+                  Welcome back, <span className="text-primary">{user?.user_metadata?.full_name || "Host"}</span>
                 </h1>
                 <p className="text-muted-foreground">
                   Manage your events and track your progress
@@ -345,7 +345,7 @@ export default function Portal() {
                   <Sparkles className="w-5 h-5 text-primary" />
                   Your Events
                 </h2>
-                <Button variant="gradient" size="sm" asChild>
+                <Button variant="default" size="sm" asChild>
                   <Link to="/submit">Submit New Event</Link>
                 </Button>
               </div>
