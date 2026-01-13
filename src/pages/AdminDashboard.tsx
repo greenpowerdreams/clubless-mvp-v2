@@ -50,6 +50,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { EmailLogsTab } from "@/components/admin/EmailLogsTab";
 import { ErrorLogsTab } from "@/components/admin/ErrorLogsTab";
+import { AdminEventsTab } from "@/components/admin/AdminEventsTab";
+import { AdminPayoutsTab } from "@/components/admin/AdminPayoutsTab";
+import { AdminVendorsTab } from "@/components/admin/AdminVendorsTab";
 
 interface ProfitSummary {
   attendance?: number;
@@ -498,18 +501,30 @@ export default function AdminDashboard() {
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <TabsList className="grid w-full sm:w-auto grid-cols-3">
+            <TabsList className="grid w-full sm:w-auto grid-cols-6">
               <TabsTrigger value="proposals" className="gap-2">
                 <Users className="w-4 h-4" />
-                Proposals
+                <span className="hidden sm:inline">Proposals</span>
+              </TabsTrigger>
+              <TabsTrigger value="events" className="gap-2">
+                <Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline">Events</span>
+              </TabsTrigger>
+              <TabsTrigger value="payouts" className="gap-2">
+                <DollarSign className="w-4 h-4" />
+                <span className="hidden sm:inline">Payouts</span>
+              </TabsTrigger>
+              <TabsTrigger value="vendors" className="gap-2">
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Vendors</span>
               </TabsTrigger>
               <TabsTrigger value="emails" className="gap-2">
                 <Mail className="w-4 h-4" />
-                Email Logs
+                <span className="hidden sm:inline">Emails</span>
               </TabsTrigger>
               <TabsTrigger value="errors" className="gap-2">
                 <AlertTriangle className="w-4 h-4" />
-                Error Logs
+                <span className="hidden sm:inline">Errors</span>
               </TabsTrigger>
             </TabsList>
             
@@ -856,6 +871,21 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Events Tab */}
+          <TabsContent value="events">
+            <AdminEventsTab />
+          </TabsContent>
+
+          {/* Payouts Tab */}
+          <TabsContent value="payouts">
+            <AdminPayoutsTab />
+          </TabsContent>
+
+          {/* Vendors Tab */}
+          <TabsContent value="vendors">
+            <AdminVendorsTab />
           </TabsContent>
 
           {/* Email Logs Tab */}
