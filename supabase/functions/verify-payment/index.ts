@@ -104,30 +104,38 @@ serve(async (req) => {
     }
     logStep("Order updated to completed");
 
-    // Update ticket quantities (move from reserved to sold)
-    const lineItems = order.line_items_json as Array<{
-      ticket_id: string;
-      quantity: number;
-    }>;
+    // Confirm ticket sale atomically (moves from reserved to sold)
+    const { error: confirmError } = await supabaseAdmin.rpc('confirm_ticket_sale', {
+      p_order_id: order_id
+    });
 
-    for (const item of lineItems) {
-      const { data: ticket } = await supabaseAdmin
-        .from("tickets")
-        .select("qty_sold, qty_reserved")
-        .eq("id", item.ticket_id)
-        .single();
+    if (confirmError) {
+      logStep("Warning: Failed to confirm ticket sale atomically", { error: confirmError.message });
+      // Fallback to manual update if RPC fails
+      const lineItems = order.line_items_json as Array<{
+        ticket_id: string;
+        quantity: number;
+      }>;
 
-      if (ticket) {
-        await supabaseAdmin
+      for (const item of lineItems) {
+        const { data: ticket } = await supabaseAdmin
           .from("tickets")
-          .update({
-            qty_sold: ticket.qty_sold + item.quantity,
-            qty_reserved: Math.max(0, ticket.qty_reserved - item.quantity),
-          })
-          .eq("id", item.ticket_id);
+          .select("qty_sold, qty_reserved")
+          .eq("id", item.ticket_id)
+          .single();
+
+        if (ticket) {
+          await supabaseAdmin
+            .from("tickets")
+            .update({
+              qty_sold: ticket.qty_sold + item.quantity,
+              qty_reserved: Math.max(0, ticket.qty_reserved - item.quantity),
+            })
+            .eq("id", item.ticket_id);
+        }
       }
     }
-    logStep("Ticket quantities updated");
+    logStep("Ticket quantities updated (reserved → sold)");
 
     // Calculate platform fee and creator amount
     const platformFeePercent = 10; // 10% platform fee

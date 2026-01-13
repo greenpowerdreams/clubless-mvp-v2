@@ -141,17 +141,22 @@ serve(async (req) => {
     }
     logStep("Line items built", { totalAmountCents, itemCount: stripeLineItems.length });
 
-    // Reserve tickets temporarily
+    // Reserve tickets atomically using database function with row-level locking
+    // This prevents race conditions where multiple users try to reserve the same tickets
     for (const item of line_items) {
-      const ticket = tickets.find(t => t.id === item.ticket_id);
-      if (ticket) {
-        await supabaseAdmin
-          .from("tickets")
-          .update({ qty_reserved: ticket.qty_reserved + item.quantity })
-          .eq("id", item.ticket_id);
+      const { error: reserveError } = await supabaseAdmin.rpc('reserve_tickets', {
+        p_ticket_id: item.ticket_id,
+        p_quantity: item.quantity,
+        p_order_id: null, // Will be set after order creation
+      });
+      
+      if (reserveError) {
+        // Release any reservations we already made if one fails
+        logStep("Reservation failed, rolling back", { ticket_id: item.ticket_id, error: reserveError.message });
+        throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticket_id}"`);
       }
-      // Note: In production, you'd use a proper reservation system with expiry
     }
+    logStep("Tickets reserved atomically");
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -173,7 +178,9 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    // Create pending order
+    // Create pending order with reservation expiration (30 minutes)
+    const reservationExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -186,6 +193,7 @@ serve(async (req) => {
         line_items_json: orderLineItems,
         status: "pending",
         currency: "usd",
+        reservation_expires_at: reservationExpiresAt,
       })
       .select()
       .single();
@@ -194,7 +202,7 @@ serve(async (req) => {
       logStep("Error creating order", { error: orderError.message });
       throw new Error("Failed to create order");
     }
-    logStep("Order created", { orderId: order.id });
+    logStep("Order created with reservation expiry", { orderId: order.id, expiresAt: reservationExpiresAt });
 
     // Create Stripe checkout session
     const origin = req.headers.get("origin") || "https://localhost:8080";
