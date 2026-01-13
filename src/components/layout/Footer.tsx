@@ -35,6 +35,14 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
             <ul className="space-y-2">
               <li>
                 <Link
+                  to="/events"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Browse Events
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/how-it-works"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >

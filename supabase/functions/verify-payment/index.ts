@@ -143,6 +143,56 @@ serve(async (req) => {
       .eq("id", order_id);
     logStep("Fees calculated", { platformFeeCents, creatorAmountCents });
 
+    // Fetch event details for email
+    const { data: eventData } = await supabaseAdmin
+      .from("events")
+      .select("title, start_at, city, address")
+      .eq("id", order.event_id)
+      .single();
+
+    // Send ticket confirmation email
+    if (eventData) {
+      const ticketsForEmail = (order.line_items_json as Array<{
+        ticket_name: string;
+        quantity: number;
+        unit_price_cents: number;
+      }>).map(item => ({
+        name: item.ticket_name,
+        quantity: item.quantity,
+        price: item.unit_price_cents,
+      }));
+
+      const eventDate = new Date(eventData.start_at).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      try {
+        const emailPayload = {
+          order_id: order.id,
+          to_email: order.buyer_email,
+          buyer_name: order.buyer_name || "Guest",
+          event_title: eventData.title,
+          event_date: eventDate,
+          event_location: eventData.address ? `${eventData.address}, ${eventData.city}` : eventData.city,
+          tickets: ticketsForEmail,
+          total_amount: order.amount_cents,
+        };
+
+        await supabaseAdmin.functions.invoke("send-ticket-email", {
+          body: emailPayload,
+        });
+        logStep("Ticket confirmation email sent");
+      } catch (emailError) {
+        // Log but don't fail the payment verification if email fails
+        logStep("Failed to send ticket email (non-fatal)", { error: String(emailError) });
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
       status: "completed",
