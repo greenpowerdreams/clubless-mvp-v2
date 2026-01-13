@@ -96,8 +96,8 @@ export default function CheckoutCancel() {
 
               <p className="text-sm text-muted-foreground mt-6">
                 Need help? Contact us at{" "}
-                <a href="mailto:support@example.com" className="text-primary hover:underline">
-                  support@example.com
+                <a href="mailto:support@clublesscollective.com" className="text-primary hover:underline">
+                  support@clublesscollective.com
                 </a>
               </p>
             </CardContent>

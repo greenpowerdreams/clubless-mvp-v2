@@ -92,6 +92,10 @@
     @apply bg-background/95 backdrop-blur-xl border border-border/50;
   }
 
+  /* Text gradient utility - uses primary color */
+  .text-gradient {
+    @apply text-primary;
+  }
 }
 
 @layer components {
