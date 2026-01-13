@@ -17,10 +17,66 @@ interface CheckoutRequest {
   line_items: LineItem[];
 }
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_CHECKOUTS_PER_WINDOW = 10; // Max 10 checkout attempts per minute per user
+const MAX_CHECKOUTS_PER_EVENT_WINDOW = 3; // Max 3 checkout attempts per minute per user per event
+
 const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-TICKET-CHECKOUT] ${step}${detailsStr}`);
 };
+
+// Rate limiting using Deno KV
+async function checkRateLimit(userId: string, eventId: string): Promise<{ allowed: boolean; reason?: string }> {
+  try {
+    const kv = await Deno.openKv();
+    const now = Date.now();
+    const windowStart = now - RATE_LIMIT_WINDOW_MS;
+
+    // Check global user rate limit
+    const userKey = ["checkout_rate_limit", "user", userId];
+    const userEntry = await kv.get<{ timestamps: number[] }>(userKey);
+    const userTimestamps = userEntry.value?.timestamps || [];
+    const recentUserTimestamps = userTimestamps.filter(ts => ts > windowStart);
+
+    if (recentUserTimestamps.length >= MAX_CHECKOUTS_PER_WINDOW) {
+      await kv.close();
+      return { 
+        allowed: false, 
+        reason: `Rate limit exceeded. Maximum ${MAX_CHECKOUTS_PER_WINDOW} checkout attempts per minute. Please try again shortly.` 
+      };
+    }
+
+    // Check per-event rate limit (prevents targeting a specific event)
+    const eventKey = ["checkout_rate_limit", "user_event", userId, eventId];
+    const eventEntry = await kv.get<{ timestamps: number[] }>(eventKey);
+    const eventTimestamps = eventEntry.value?.timestamps || [];
+    const recentEventTimestamps = eventTimestamps.filter(ts => ts > windowStart);
+
+    if (recentEventTimestamps.length >= MAX_CHECKOUTS_PER_EVENT_WINDOW) {
+      await kv.close();
+      return { 
+        allowed: false, 
+        reason: `Too many checkout attempts for this event. Maximum ${MAX_CHECKOUTS_PER_EVENT_WINDOW} per minute. Please wait before trying again.` 
+      };
+    }
+
+    // Update timestamps
+    recentUserTimestamps.push(now);
+    recentEventTimestamps.push(now);
+
+    await kv.set(userKey, { timestamps: recentUserTimestamps }, { expireIn: RATE_LIMIT_WINDOW_MS });
+    await kv.set(eventKey, { timestamps: recentEventTimestamps }, { expireIn: RATE_LIMIT_WINDOW_MS });
+
+    await kv.close();
+    return { allowed: true };
+  } catch (error) {
+    // If KV fails, allow the request but log the error
+    logStep("Rate limit check failed, allowing request", { error: String(error) });
+    return { allowed: true };
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -58,6 +114,17 @@ serve(async (req) => {
       throw new Error("Missing event_id or line_items");
     }
     logStep("Request parsed", { event_id, lineItemCount: line_items.length });
+
+    // Check rate limit before processing
+    const rateLimitResult = await checkRateLimit(user.id, event_id);
+    if (!rateLimitResult.allowed) {
+      logStep("Rate limit exceeded", { userId: user.id, eventId: event_id });
+      return new Response(JSON.stringify({ error: rateLimitResult.reason }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429,
+      });
+    }
+    logStep("Rate limit check passed");
 
     // Fetch event details
     const { data: event, error: eventError } = await supabaseAdmin
