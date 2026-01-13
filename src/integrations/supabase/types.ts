@@ -420,6 +420,7 @@ export type Database = {
           platform_fee_cents: number
           refund_amount_cents: number | null
           refund_reason: string | null
+          reservation_expires_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -441,6 +442,7 @@ export type Database = {
           platform_fee_cents?: number
           refund_amount_cents?: number | null
           refund_reason?: string | null
+          reservation_expires_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -462,6 +464,7 @@ export type Database = {
           platform_fee_cents?: number
           refund_amount_cents?: number | null
           refund_reason?: string | null
+          reservation_expires_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -917,6 +920,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_ticket_sale: { Args: { p_order_id: string }; Returns: boolean }
       get_proposal_status: {
         Args: { lookup_email: string }
         Returns: {
@@ -946,6 +950,14 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      release_ticket_reservations: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
+      reserve_tickets: {
+        Args: { p_order_id: string; p_quantity: number; p_ticket_id: string }
         Returns: boolean
       }
     }
