@@ -304,8 +304,8 @@ export default function VendorMarketplace() {
                           </div>
                         )}
 
-                        <Button className="w-full" variant="outline">
-                          View Services
+                        <Button className="w-full" variant="outline" asChild>
+                          <Link to={`/vendors/${vendor.id}`}>View Services</Link>
                         </Button>
                       </CardContent>
                     </Card>
