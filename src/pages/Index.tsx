@@ -11,6 +11,10 @@ import {
   Sparkles,
   Wine,
   MapPin,
+  Store,
+  Utensils,
+  Camera,
+  Music,
 } from "lucide-react";
 import heroImage from "@/assets/hero-party.jpg";
 
@@ -236,6 +240,64 @@ export default function Index() {
                 Learn More
                 <ArrowRight className="w-5 h-5" />
               </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Vendor Marketplace Section */}
+      <section className="py-12 md:py-32 bg-card border-y border-border relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-1/4 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-accent/30 rounded-full blur-[80px] md:blur-[120px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-48 md:w-80 h-48 md:h-80 bg-neon-gold/20 rounded-full blur-[60px] md:blur-[100px]" />
+        </div>
+        <div className="container px-4 sm:px-6 relative">
+          <div className="text-center mb-10 md:mb-16">
+            <p className="text-accent font-semibold uppercase tracking-wider text-xs md:text-sm mb-2 md:mb-3">
+              Vendor Marketplace
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4">
+              Everything You Need,{" "}
+              <span className="text-accent">All in One Place</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-lg px-2">
+              Browse verified vendors for bartending, catering, security, photography, 
+              and more. Get quotes directly and build your perfect event team.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto mb-8 md:mb-12">
+            {[
+              { icon: Wine, label: "Bartending", color: "text-primary" },
+              { icon: Utensils, label: "Catering", color: "text-accent" },
+              { icon: Shield, label: "Security", color: "text-secondary" },
+              { icon: Camera, label: "Photo/Video", color: "text-neon-gold" },
+              { icon: Music, label: "DJ Equipment", color: "text-primary" },
+              { icon: Sparkles, label: "Decor", color: "text-accent" },
+              { icon: Users, label: "Staffing", color: "text-secondary" },
+              { icon: Store, label: "AV Equipment", color: "text-neon-gold" },
+            ].map((item, index) => (
+              <div 
+                key={index}
+                className="glass rounded-xl p-4 md:p-6 text-center hover:border-accent/40 transition-all duration-300 group hover:-translate-y-1"
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-muted flex items-center justify-center mx-auto mb-2 md:mb-3 group-hover:bg-accent/20 transition-colors">
+                  <item.icon className={`w-5 h-5 md:w-6 md:h-6 ${item.color}`} />
+                </div>
+                <span className="text-sm md:text-base font-medium">{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+            <Button variant="default" size="lg" asChild className="w-full sm:w-auto">
+              <Link to="/vendors">
+                Browse Vendors
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" asChild className="w-full sm:w-auto">
+              <Link to="/vendor/dashboard">Become a Vendor</Link>
             </Button>
           </div>
         </div>

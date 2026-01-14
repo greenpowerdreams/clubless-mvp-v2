@@ -9,6 +9,7 @@ import logo from "@/assets/logo.png";
 const navLinks = [
   { name: "Home", path: "/" },
   { name: "Events", path: "/events" },
+  { name: "Vendors", path: "/vendors" },
   { name: "How It Works", path: "/how-it-works" },
   { name: "Profit Calculator", path: "/calculator" },
 ];
