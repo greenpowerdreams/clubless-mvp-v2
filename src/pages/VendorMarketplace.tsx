@@ -69,7 +69,7 @@ export default function VendorMarketplace() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState("all");
 
   useEffect(() => {
     fetchVendors();
@@ -114,7 +114,7 @@ export default function VendorMarketplace() {
     
     const matchesCategory = selectedCategory === "all" || vendor.category === selectedCategory;
     
-    const matchesCity = !selectedCity || 
+    const matchesCity = selectedCity === "all" || 
       vendor.service_area?.some(area => area.toLowerCase().includes(selectedCity.toLowerCase()));
 
     return matchesSearch && matchesCategory && matchesCity;
@@ -181,7 +181,7 @@ export default function VendorMarketplace() {
                     <SelectValue placeholder="All Locations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Locations</SelectItem>
+                    <SelectItem value="all">All Locations</SelectItem>
                     {allCities.map(city => (
                       <SelectItem key={city} value={city}>{city}</SelectItem>
                     ))}
