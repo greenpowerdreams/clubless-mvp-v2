@@ -9,13 +9,16 @@ export default {
       center: true,
       padding: "1.5rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1280px",
       },
     },
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Bebas Neue', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -51,13 +54,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        neon: {
-          violet: "hsl(var(--neon-violet))",
-          pink: "hsl(var(--neon-pink))",
-          gold: "hsl(var(--neon-gold))",
-          blue: "hsl(var(--neon-blue))",
-          green: "hsl(var(--neon-green))",
+        brand: {
+          violet: "hsl(var(--brand-violet))",
+          gold: "hsl(var(--brand-gold))",
         },
+        success: "hsl(var(--success))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -73,6 +74,10 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
       },
       keyframes: {
         "accordion-down": {
