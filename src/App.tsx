@@ -27,6 +27,9 @@ import CreatorDashboard from "./pages/CreatorDashboard";
 import VendorDashboard from "./pages/VendorDashboard";
 import VendorMarketplace from "./pages/VendorMarketplace";
 import VendorDetail from "./pages/VendorDetail";
+import Pricing from "./pages/Pricing";
+import FAQ from "./pages/FAQ";
+import VendorApply from "./pages/VendorApply";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +45,8 @@ const App = () => (
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/calculator" element={<Calculator />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/submit" element={<SubmitEvent />} />
           <Route path="/status" element={<ProposalStatus />} />
           <Route path="/admin" element={<AdminDashboard />} />
@@ -58,6 +63,7 @@ const App = () => (
           <Route path="/profile" element={<ProfileSettings />} />
           <Route path="/creator" element={<CreatorDashboard />} />
           <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+          <Route path="/vendor/apply" element={<VendorApply />} />
           <Route path="/vendors" element={<VendorMarketplace />} />
           <Route path="/vendors/:id" element={<VendorDetail />} />
           <Route path="*" element={<NotFound />} />

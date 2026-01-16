@@ -8,9 +8,10 @@ import logo from "@/assets/logo.png";
 
 const navLinks = [
   { name: "Events", path: "/events" },
+  { name: "For Creators", path: "/how-it-works" },
   { name: "Vendors", path: "/vendors" },
-  { name: "How It Works", path: "/how-it-works" },
-  { name: "Calculator", path: "/calculator" },
+  { name: "Pricing", path: "/pricing" },
+  { name: "FAQ", path: "/faq" },
 ];
 
 export function Navbar() {
