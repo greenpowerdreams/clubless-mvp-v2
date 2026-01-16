@@ -42,44 +42,52 @@ export default function Index() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-fade-in">
               <Zap className="w-3.5 h-3.5 text-primary" />
               <span className="text-xs font-medium text-primary tracking-wide">
-                Nightlife Reimagined
+                The Operating System for Independent Events
               </span>
             </div>
 
             {/* Headline */}
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 animate-slide-up tracking-tight">
-              Own Your Event.
+              Turn Your Events
               <br />
-              <span className="text-primary">Keep Your Profit.</span>
+              <span className="text-primary">Into Profit</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              We handle venues, bar, catering, and logistics. You bring the vision and take home 70-85% of the revenue.
+              Plan, price, and launch licensed events with transparent costs — without needing a club.
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <Button size="lg" asChild>
-                <Link to="/submit">
-                  Become a Host
+                <Link to="/signup?role=creator">
+                  Create an Event
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link to="/calculator">Calculate Your Profit</Link>
+                <Link to="/events">Find Events</Link>
               </Button>
             </div>
+
+            {/* Tertiary CTA */}
+            <p className="mt-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: "0.3s" }}>
+              Are you a vendor?{" "}
+              <Link to="/vendor/apply" className="text-primary hover:underline font-medium">
+                Join our network →
+              </Link>
+            </p>
 
             {/* Trust indicators */}
             <div className="flex flex-wrap items-center justify-center gap-6 mt-12 animate-fade-in" style={{ animationDelay: "0.4s" }}>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span>Seattle</span>
+                <DollarSign className="w-4 h-4 text-primary" />
+                <span>Transparent Calculator</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Shield className="w-4 h-4 text-primary" />
-                <span>Licensed & Insured</span>
+                <span>Ticketing via Stripe</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="w-4 h-4 text-primary" />
@@ -297,7 +305,7 @@ export default function Index() {
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/vendor/dashboard">Become a Vendor</Link>
+              <Link to="/vendor/apply">Become a Vendor</Link>
             </Button>
           </div>
         </div>
