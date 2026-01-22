@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { supabase } from "@/integrations/supabase/client";
+import { IMAGES } from "@/lib/images";
 import { toast } from "sonner";
 import { 
   ArrowLeft,
@@ -16,7 +18,6 @@ import {
   Shield,
   FileCheck,
   Clock,
-  DollarSign,
   Mail,
   Phone,
   Globe,
@@ -25,6 +26,18 @@ import {
   Calendar,
   Check
 } from "lucide-react";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  bartending: IMAGES.vendors.bartending,
+  catering: IMAGES.vendors.catering,
+  security: IMAGES.vendors.security,
+  dj_equipment: IMAGES.vendors.dj,
+  photo_video: IMAGES.vendors.photoVideo,
+  decor: IMAGES.vendors.decor,
+  av_equipment: IMAGES.vendors.av,
+  staffing: IMAGES.vendors.staffing,
+  other: IMAGES.placeholder.vendor,
+};
 
 interface Vendor {
   id: string;
