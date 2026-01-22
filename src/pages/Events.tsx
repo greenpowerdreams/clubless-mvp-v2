@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { SkeletonGrid } from "@/components/ui/skeleton-card";
+import { ComingSoonEvents } from "@/components/waitlist/ComingSoonEvents";
 import { supabase } from "@/integrations/supabase/client";
 import { IMAGES } from "@/lib/images";
 import { Calendar, MapPin, Users, Search, Sparkles, ArrowRight } from "lucide-react";
@@ -29,7 +30,7 @@ interface Event {
   }[];
 }
 
-const CITIES = ["All Cities", "Los Angeles", "San Diego", "San Francisco", "New York", "Miami", "Austin"];
+const CITIES = ["All Cities", "Seattle", "Los Angeles", "San Diego", "San Francisco", "New York", "Miami", "Austin"];
 const VIBES = ["All Vibes", "Afrohouse", "R&B", "Techno", "Hip-Hop", "House", "Day Party", "Rooftop"];
 
 export default function Events() {
@@ -123,17 +124,18 @@ export default function Events() {
     return `$${(cents / 100).toFixed(0)}`;
   };
 
-  // Get random event image for variety
   const getEventImage = (index: number) => {
     const images = Object.values(IMAGES.events);
     return images[index % images.length];
   };
 
+  // Check if there are any real published events
+  const hasPublishedEvents = events.length > 0;
+
   return (
     <Layout>
       {/* Hero Section with Background */}
       <section className="relative py-20 md:py-28 overflow-hidden">
-        {/* Background */}
         <div className="absolute inset-0">
           <ImageWithFallback
             src={IMAGES.events.festival}
@@ -152,63 +154,67 @@ export default function Events() {
               Find unforgettable experiences near you
             </p>
 
-            {/* Search & Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search events..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-12 text-base bg-secondary border-border"
-                />
+            {/* Search & Filters - Only show if we have events */}
+            {hasPublishedEvents && (
+              <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search events..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-12 h-12 text-base bg-secondary border-border"
+                  />
+                </div>
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                  <SelectTrigger className="w-full sm:w-44 h-12 bg-secondary border-border">
+                    <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="City" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CITIES.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedVibe} onValueChange={setSelectedVibe}>
+                  <SelectTrigger className="w-full sm:w-44 h-12 bg-secondary border-border">
+                    <Sparkles className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Vibe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VIBES.map((vibe) => (
+                      <SelectItem key={vibe} value={vibe}>
+                        {vibe}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={selectedCity} onValueChange={setSelectedCity}>
-                <SelectTrigger className="w-full sm:w-44 h-12 bg-secondary border-border">
-                  <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="City" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CITIES.map((city) => (
-                    <SelectItem key={city} value={city}>
-                      {city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedVibe} onValueChange={setSelectedVibe}>
-                <SelectTrigger className="w-full sm:w-44 h-12 bg-secondary border-border">
-                  <Sparkles className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Vibe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VIBES.map((vibe) => (
-                    <SelectItem key={vibe} value={vibe}>
-                      {vibe}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Events Grid */}
+      {/* Events Content */}
       <section className="py-16 md:py-20">
         <div className="container px-4">
           {loading ? (
             <SkeletonGrid count={6} variant="event" />
+          ) : !hasPublishedEvents ? (
+            // Pre-launch: Coming Soon state
+            <ComingSoonEvents city="Seattle" />
           ) : filteredEvents.length === 0 ? (
+            // Has events but filters don't match
             <div className="text-center py-20 max-w-md mx-auto">
               <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
                 <Sparkles className="h-10 w-10 text-muted-foreground" />
               </div>
               <h3 className="font-display text-2xl font-bold mb-3">No events found</h3>
               <p className="text-muted-foreground mb-8">
-                {searchQuery || selectedCity !== "All Cities" || selectedVibe !== "All Vibes"
-                  ? "Try adjusting your search or filters to find more events"
-                  : "Check back soon for upcoming events in your area"}
+                Try adjusting your search or filters to find more events
               </p>
               <Button variant="outline" size="lg" onClick={() => { 
                 setSearchQuery(""); 
@@ -230,7 +236,6 @@ export default function Events() {
                 {filteredEvents.map((event, index) => (
                   <Link key={event.id} to={`/events/${event.id}`} className="group block">
                     <div className="rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
-                      {/* Event Image */}
                       <div className="aspect-[16/10] relative overflow-hidden">
                         <ImageWithFallback
                           src={event.cover_image_url || getEventImage(index)}
@@ -251,7 +256,6 @@ export default function Events() {
                           </Badge>
                         )}
                         
-                        {/* Price overlay */}
                         <div className="absolute bottom-4 left-4">
                           <div className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold">
                             {formatPrice(getLowestPrice(event.tickets))}

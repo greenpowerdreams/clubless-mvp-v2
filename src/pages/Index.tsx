@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
+import { WaitlistForm } from "@/components/waitlist/WaitlistForm";
 import {
   ArrowRight,
   DollarSign,
@@ -15,7 +16,7 @@ import {
   Star,
   Play,
 } from "lucide-react";
-import { IMAGES, FEATURED_EVENTS_MOCK, VENDOR_CATEGORIES_WITH_IMAGES, TESTIMONIALS } from "@/lib/images";
+import { IMAGES, VENDOR_CATEGORIES_WITH_IMAGES, TESTIMONIALS } from "@/lib/images";
 
 export default function Index() {
   return (
@@ -38,11 +39,11 @@ export default function Index() {
 
         <div className="container relative z-10 px-4 pt-32 pb-20 md:pt-24 md:pb-28">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Badge */}
+            {/* Early Access Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in backdrop-blur-sm">
               <Zap className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary tracking-wide">
-                The Operating System for Independent Events
+                Now Onboarding Seattle Creators + Vendors
               </span>
             </div>
 
@@ -62,12 +63,12 @@ export default function Index() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <Button size="xl" asChild className="group">
                 <Link to="/signup?role=creator">
-                  Create an Event
+                  Apply to Host
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
-                <Link to="/events">Find Events</Link>
+                <Link to="/events">Get Notified</Link>
               </Button>
             </div>
 
@@ -103,70 +104,24 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Featured Events Section */}
+      {/* Early Access Waitlist Section */}
       <section className="py-24 md:py-32 bg-card">
         <div className="container px-4">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
-            <div>
-              <p className="text-primary font-semibold text-sm mb-2 tracking-wide uppercase">
-                Upcoming Events
-              </p>
-              <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold">
-                Featured Events
-              </h2>
+          <div className="max-w-2xl mx-auto text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 mb-6">
+              <Sparkles className="w-4 h-4 text-accent" />
+              <span className="text-xs font-medium text-accent">Early Access</span>
             </div>
-            <Button variant="outline" asChild className="self-start md:self-auto">
-              <Link to="/events">
-                View All Events
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+              Be the First to Know
+            </h2>
+            <p className="text-muted-foreground text-lg mb-8">
+              Join the waitlist to get notified when events launch in Seattle.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURED_EVENTS_MOCK.map((event, index) => (
-              <Link 
-                key={event.id} 
-                to={`/events/${event.id}`}
-                className="group block"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="rounded-2xl overflow-hidden bg-secondary border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1">
-                  <div className="aspect-[4/3] relative overflow-hidden">
-                    <ImageWithFallback
-                      src={event.image}
-                      alt={event.title}
-                      className="w-full h-full group-hover:scale-105 transition-transform duration-500"
-                      fallbackType="event"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-                    <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-background/80 backdrop-blur-sm text-xs font-medium">
-                      {event.theme}
-                    </span>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                      {event.title}
-                    </h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
-                        {event.date}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-4 border-t border-border">
-                      <div>
-                        <span className="text-xs text-muted-foreground">From</span>
-                        <p className="font-bold text-lg text-primary">${event.price}</p>
-                      </div>
-                      <span className="text-sm font-medium text-primary group-hover:underline">
-                        View →
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="max-w-lg mx-auto">
+            <WaitlistForm variant="hero" sourcePage="/" />
           </div>
         </div>
       </section>
