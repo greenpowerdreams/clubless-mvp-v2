@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
+import { ScrollToTop } from "@/shared/components/ScrollToTop";
+import { InstallPrompt } from "@/shared/components/InstallPrompt";
 
 // Eager load: lightweight, always needed
 import NotFound from "./pages/NotFound";
@@ -65,6 +67,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ScrollToTop />
+          <InstallPrompt />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public */}
