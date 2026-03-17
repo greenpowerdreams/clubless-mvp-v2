@@ -35,8 +35,9 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const VendorApply = lazy(() => import("./pages/VendorApply"));
 
-// New unified dashboard
+// New unified dashboard + scheduling
 const Dashboard = lazy(() => import("./features/dashboard/Dashboard"));
+const WhosPlaying = lazy(() => import("./features/scheduling/WhosPlaying"));
 const PortalEventDetail = lazy(() => import("./pages/PortalEventDetail"));
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/submit" element={<SubmitEvent />} />
               <Route path="/status" element={<ProposalStatus />} />
+              <Route path="/whos-playing" element={<WhosPlaying />} />
               <Route path="/vendors" element={<VendorMarketplace />} />
               <Route path="/vendors/:id" element={<VendorDetail />} />
               <Route path="/vendor/apply" element={<VendorApply />} />
