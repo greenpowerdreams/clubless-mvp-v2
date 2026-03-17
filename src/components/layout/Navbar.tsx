@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, User, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/features/auth/AuthProvider";
 import logo from "@/assets/logo.png";
 
 const navLinks = [
@@ -17,8 +17,9 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user } = useAuth();
   const location = useLocation();
+  const isLoggedIn = !!user;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,26 +29,12 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setIsLoggedIn(!!session);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   return (
-    <nav 
+    <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isScrolled 
-          ? "bg-background/95 backdrop-blur-sm border-b border-border" 
+        isScrolled
+          ? "bg-background/95 backdrop-blur-sm border-b border-border"
           : "bg-transparent"
       )}
     >
@@ -55,9 +42,9 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src={logo} 
-              alt="Clubless Collective" 
+            <img
+              src={logo}
+              alt="Clubless Collective"
               className="h-10 md:h-12 w-auto"
             />
           </Link>
@@ -80,16 +67,16 @@ export function Navbar() {
             ))}
             {isLoggedIn && (
               <Link
-                to="/portal"
+                to="/dashboard"
                 className={cn(
                   "px-4 py-2 text-sm font-medium transition-colors rounded-lg flex items-center gap-1.5",
-                  location.pathname.startsWith("/portal")
+                  location.pathname.startsWith("/dashboard")
                     ? "text-foreground bg-muted"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 <User className="w-4 h-4" />
-                Portal
+                Dashboard
               </Link>
             )}
           </div>
@@ -98,7 +85,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
               <Button variant="default" size="sm" asChild>
-                <Link to="/portal">Dashboard</Link>
+                <Link to="/dashboard">Dashboard</Link>
               </Button>
             ) : (
               <>
@@ -146,23 +133,23 @@ export function Navbar() {
               ))}
               {isLoggedIn && (
                 <Link
-                  to="/portal"
+                  to="/dashboard"
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "px-4 py-3 text-base font-medium transition-colors rounded-lg flex items-center gap-2",
-                    location.pathname.startsWith("/portal")
+                    location.pathname.startsWith("/dashboard")
                       ? "text-foreground bg-muted"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
                   <User className="w-4 h-4" />
-                  Host Portal
+                  Dashboard
                 </Link>
               )}
               <div className="pt-4 mt-2 border-t border-border flex flex-col gap-2">
                 {isLoggedIn ? (
                   <Button variant="default" asChild>
-                    <Link to="/portal" onClick={() => setIsOpen(false)}>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                       My Dashboard
                     </Link>
                   </Button>

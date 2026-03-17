@@ -16,8 +16,11 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [mode, setMode] = useState<"password" | "magic">("password");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+
   // Get redirect destination from state (e.g., from submit page)
-  const redirectTo = location.state?.redirectTo || "/portal";
+  const redirectTo = location.state?.redirectTo || "/dashboard";
   const preservedState = location.state?.preservedState;
 
   useEffect(() => {
@@ -85,6 +88,61 @@ export default function Login() {
     }
   };
 
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+
+      setMagicLinkSent(true);
+      toast({
+        title: "Magic link sent!",
+        description: "Check your email for the login link.",
+      });
+    } catch (error) {
+      console.error("Magic link error:", error);
+      toast({
+        title: "Failed to send magic link",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (magicLinkSent) {
+    return (
+      <Layout>
+        <section className="min-h-[70vh] flex items-center justify-center py-12">
+          <div className="container px-4">
+            <div className="max-w-md mx-auto text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="font-display text-2xl font-bold mb-4">Check Your Email</h1>
+              <p className="text-muted-foreground mb-6">
+                We sent a magic link to <strong className="text-foreground">{email}</strong>.
+                Click the link to sign in to your dashboard.
+              </p>
+              <Button variant="outline" onClick={() => setMagicLinkSent(false)}>
+                Try another email
+              </Button>
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <section className="min-h-[70vh] flex items-center justify-center py-12">
@@ -98,74 +156,112 @@ export default function Login() {
                 Welcome <span className="text-primary">Back</span>
               </h1>
               <p className="text-muted-foreground">
-                Sign in to your Host Portal
+                Sign in to your dashboard
               </p>
             </div>
 
             <div className="glass rounded-2xl p-8">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      required
-                      className="pl-10 bg-secondary/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="password">Password</Label>
-                    <Link 
-                      to="/forgot-password" 
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="pl-10 bg-secondary/50"
-                    />
-                  </div>
-                </div>
-
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mb-6">
                 <Button
-                  type="submit"
-                  variant="default"
-                  className="w-full"
-                  disabled={isLoading}
+                  variant={mode === "password" ? "default" : "outline"}
+                  className="flex-1"
+                  size="sm"
+                  onClick={() => setMode("password")}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  Password
                 </Button>
-              </form>
-
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-xs text-muted-foreground text-center mb-3">
-                  Or sign in with a magic link
-                </p>
                 <Button
-                  variant="outline"
-                  className="w-full"
-                  asChild
+                  variant={mode === "magic" ? "default" : "outline"}
+                  className="flex-1"
+                  size="sm"
+                  onClick={() => setMode("magic")}
                 >
-                  <Link to="/portal/login">Use Magic Link Instead</Link>
+                  Magic Link
                 </Button>
               </div>
+
+              {mode === "password" ? (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@email.com"
+                        required
+                        className="pl-10 bg-secondary/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label htmlFor="password">Password</Label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 bg-secondary/50"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="default"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleMagicLink} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="magic-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@email.com"
+                        required
+                        className="pl-10 bg-secondary/50"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Sending..." : "Send Magic Link"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    We'll email you a secure link to sign in instantly.
+                  </p>
+                </form>
+              )}
             </div>
 
             <p className="text-center text-sm text-muted-foreground mt-6">

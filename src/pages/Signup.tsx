@@ -26,7 +26,7 @@ export default function Signup() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Get redirect destination from state (e.g., from submit page)
-  const redirectTo = location.state?.redirectTo || "/portal";
+  const redirectTo = location.state?.redirectTo || "/dashboard";
   const preservedState = location.state?.preservedState;
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function Signup() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/portal`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: name.trim(),
           },

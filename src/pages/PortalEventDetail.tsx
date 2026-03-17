@@ -57,7 +57,7 @@ export default function PortalEventDetail() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate("/portal/login");
+        navigate("/login");
         return;
       }
 
@@ -72,7 +72,7 @@ export default function PortalEventDetail() {
         if (error) {
           console.error("Error fetching event:", error);
         } else if (!data) {
-          navigate("/portal");
+          navigate("/dashboard?tab=proposals");
         } else {
           setEvent(data as EventProposal);
         }
@@ -135,7 +135,7 @@ export default function PortalEventDetail() {
           <div className="text-center">
             <p className="text-muted-foreground mb-4">Event not found</p>
             <Button asChild>
-              <Link to="/portal">Back to Dashboard</Link>
+              <Link to="/dashboard?tab=proposals">Back to Dashboard</Link>
             </Button>
           </div>
         </div>
@@ -153,7 +153,7 @@ export default function PortalEventDetail() {
           <div className="max-w-4xl mx-auto">
             {/* Back Button */}
             <Button variant="ghost" asChild className="mb-6">
-              <Link to="/portal">
+              <Link to="/dashboard?tab=proposals">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Link>
