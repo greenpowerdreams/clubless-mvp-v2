@@ -8,6 +8,7 @@ import { DashboardEvents } from "./DashboardEvents";
 import { DashboardProposals } from "./DashboardProposals";
 import { DashboardRevenue } from "./DashboardRevenue";
 import { DashboardSchedule } from "@/features/scheduling/DashboardSchedule";
+import { DashboardTeam } from "@/features/collaboration/DashboardTeam";
 import { LogOut, Settings, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -82,6 +83,7 @@ export default function Dashboard() {
                 <TabsTrigger value="events">Events</TabsTrigger>
                 <TabsTrigger value="schedule">Schedule</TabsTrigger>
                 <TabsTrigger value="proposals">Proposals</TabsTrigger>
+                <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="revenue">Revenue</TabsTrigger>
               </TabsList>
 
@@ -99,6 +101,10 @@ export default function Dashboard() {
 
               <TabsContent value="proposals">
                 <DashboardProposals userId={user.id} />
+              </TabsContent>
+
+              <TabsContent value="team">
+                <DashboardTeam userId={user.id} />
               </TabsContent>
 
               <TabsContent value="revenue">
