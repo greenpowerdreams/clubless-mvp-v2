@@ -6,17 +6,68 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreatorDirectory } from "./hooks/useProfile";
-import { IMAGES } from "@/lib/images";
 import { MapPin, Music, CheckCircle2, ArrowRight } from "lucide-react";
 
-const GALLERY_IMAGES = [
-  { src: IMAGES.events.dj, label: "DJs" },
-  { src: IMAGES.events.concert, label: "Live Events" },
-  { src: IMAGES.events.party, label: "Parties" },
-  { src: IMAGES.events.rooftop, label: "Rooftops" },
-  { src: IMAGES.events.festival, label: "Festivals" },
-  { src: IMAGES.events.dance, label: "Dance Floors" },
+const HERO_IMAGES = [
+  "/img/hero/4151.jpg",
+  "/img/hero/4152.jpg",
+  "/img/hero/4153.jpg",
+  "/img/hero/4154.jpg",
+  "/img/hero/4155.jpg",
+  "/img/hero/4156.jpg",
+  "/img/hero/4157.jpg",
+  "/img/hero/4158.jpg",
+  "/img/hero/4168.jpg",
+  "/img/hero/4169.jpg",
+  "/img/hero/4170.jpg",
+  "/img/hero/4171.jpg",
+  "/img/hero/4173.jpg",
+  "/img/hero/4174.jpg",
+  "/img/hero/4175.jpg",
+  "/img/hero/4176.jpg",
 ];
+
+function Filmstrip() {
+  // Double the array for seamless infinite loop
+  const images = [...HERO_IMAGES, ...HERO_IMAGES];
+  return (
+    <div
+      className="relative overflow-hidden mb-12"
+      style={{
+        maskImage: "linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent)",
+        WebkitMaskImage: "linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent)",
+      }}
+    >
+      <div
+        className="flex gap-3"
+        style={{
+          width: "max-content",
+          animation: "filmRoll 45s linear infinite",
+          willChange: "transform",
+        }}
+      >
+        {images.map((src, i) => (
+          <div
+            key={i}
+            className="flex-shrink-0 w-52 h-36 md:w-64 md:h-44 rounded-xl overflow-hidden"
+          >
+            <img
+              src={src}
+              alt="Seattle nightlife"
+              loading="lazy"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes filmRoll {
+          to { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 const COMING_SOON_CITIES = ["Los Angeles", "San Francisco", "New York", "Miami", "Austin"];
 
@@ -61,26 +112,20 @@ export default function CreatorDirectory() {
       <section className="py-16 md:py-20">
         <div className="container px-4">
           {isComingSoon ? (
-            <div className="max-w-3xl mx-auto text-center py-8">
-              <div className="grid grid-cols-3 gap-3 mb-10">
-                {GALLERY_IMAGES.map((img) => (
-                  <div key={img.src} className="aspect-[4/3] rounded-xl overflow-hidden relative">
-                    <img src={img.src} alt={img.label} className="w-full h-full object-cover opacity-60" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <span className="absolute bottom-2 left-0 right-0 text-center text-xs font-medium text-muted-foreground">{img.label}</span>
-                  </div>
-                ))}
+            <div className="max-w-4xl mx-auto">
+              <Filmstrip />
+              <div className="text-center">
+                <h3 className="font-display text-2xl font-bold mb-3">{selectedCity} Coming Soon</h3>
+                <p className="text-muted-foreground mb-4">
+                  We're expanding to {selectedCity}. For now, explore Seattle creators.
+                </p>
+                <button
+                  onClick={() => setSelectedCity("Seattle")}
+                  className="text-sm text-primary font-medium hover:underline"
+                >
+                  View Seattle creators
+                </button>
               </div>
-              <h3 className="font-display text-2xl font-bold mb-3">{selectedCity} Coming Soon</h3>
-              <p className="text-muted-foreground mb-2">
-                We're expanding to {selectedCity}. For now, explore Seattle creators.
-              </p>
-              <button
-                onClick={() => setSelectedCity("Seattle")}
-                className="mt-4 text-sm text-primary font-medium hover:underline"
-              >
-                View Seattle creators
-              </button>
             </div>
           ) : isLoading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -89,23 +134,12 @@ export default function CreatorDirectory() {
               ))}
             </div>
           ) : !creators || creators.length === 0 ? (
-            <div className="max-w-3xl mx-auto">
-              {/* Gallery grid */}
-              <div className="grid grid-cols-3 gap-3 mb-10">
-                {GALLERY_IMAGES.map((img) => (
-                  <div key={img.src} className="aspect-[4/3] rounded-xl overflow-hidden relative">
-                    <img src={img.src} alt={img.label} className="w-full h-full object-cover opacity-70" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <span className="absolute bottom-2 left-0 right-0 text-center text-xs font-medium text-muted-foreground">{img.label}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Invitation CTA */}
+            <div className="max-w-4xl mx-auto">
+              <Filmstrip />
               <div className="text-center">
-                <span className="font-display text-3xl font-bold text-white tracking-tight block mb-3">clubless</span>
-                <h3 className="font-display text-xl font-bold mb-3">Be the First Creator in Seattle</h3>
+                <h3 className="font-display text-2xl font-bold mb-3">Join the Creators of Seattle</h3>
                 <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                  The Seattle creator scene is just getting started. Join Clubless and build your name in the city.
+                  The Seattle scene is building. Host your first event and put your name on the map.
                 </p>
                 <Button asChild>
                   <Link to="/submit">
