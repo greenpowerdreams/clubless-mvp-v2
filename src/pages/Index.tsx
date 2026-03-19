@@ -13,10 +13,9 @@ import {
   Sparkles,
   CheckCircle,
   Zap,
-  Star,
   Play,
 } from "lucide-react";
-import { IMAGES, VENDOR_CATEGORIES_WITH_IMAGES, TESTIMONIALS } from "@/lib/images";
+import { IMAGES, VENDOR_CATEGORIES_WITH_IMAGES } from "@/lib/images";
 
 export default function Index() {
   return (
@@ -49,9 +48,9 @@ export default function Index() {
 
             {/* Headline */}
             <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 animate-slide-up tracking-tight leading-[0.9]">
-              Turn Your Events
+              Your Personal
               <br />
-              <span className="text-primary">Into Profit</span>
+              <span className="text-primary">Event Operating System</span>
             </h1>
 
             {/* Subheadline */}
@@ -354,64 +353,6 @@ export default function Index() {
             <Button variant="outline" asChild>
               <Link to="/vendor/apply">Become a Vendor</Link>
             </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-24 md:py-32 bg-card relative overflow-hidden">
-        {/* Background accent */}
-        <div className="absolute top-0 right-0 w-1/2 h-full opacity-5">
-          <ImageWithFallback
-            src={IMAGES.lifestyle.vip}
-            alt=""
-            className="w-full h-full"
-          />
-        </div>
-        
-        <div className="container px-4 relative">
-          <div className="text-center mb-16">
-            <p className="text-primary font-semibold text-sm mb-2 tracking-wide uppercase">
-              Testimonials
-            </p>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-              Trusted by Creators
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              See what event creators and vendors are saying about Clubless Collective
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {TESTIMONIALS.map((testimonial) => (
-              <div
-                key={testimonial.id}
-                className="rounded-2xl bg-secondary border border-border p-8 hover:border-primary/30 transition-colors"
-              >
-                <div className="flex items-center gap-1 mb-6">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-foreground text-lg leading-relaxed mb-8">
-                  "{testimonial.quote}"
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden">
-                    <ImageWithFallback
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      className="w-full h-full"
-                      fallbackType="profile"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>

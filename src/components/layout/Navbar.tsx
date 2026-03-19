@@ -4,7 +4,6 @@ import { Menu, X, User, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/AuthProvider";
-import logo from "@/assets/logo.png";
 
 const navLinks = [
   { name: "Events", path: "/events" },
@@ -42,11 +41,9 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img
-              src={logo}
-              alt="Clubless Collective"
-              className="h-10 md:h-12 w-auto"
-            />
+            <span className="text-white font-bold text-2xl tracking-tight">
+              clubless
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

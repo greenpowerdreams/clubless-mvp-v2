@@ -7,11 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCreatorDirectory } from "./hooks/useProfile";
 import { MapPin, Music, CheckCircle2, Sparkles, Users } from "lucide-react";
 
-const CITIES = ["All Cities", "Seattle", "Los Angeles", "San Francisco", "New York", "Miami", "Austin"];
+const COMING_SOON_CITIES = ["Los Angeles", "San Francisco", "New York", "Miami", "Austin"];
 
 export default function CreatorDirectory() {
-  const [selectedCity, setSelectedCity] = useState("All Cities");
-  const { data: creators, isLoading } = useCreatorDirectory(selectedCity);
+  const [selectedCity, setSelectedCity] = useState("Seattle");
+  const isComingSoon = selectedCity !== "Seattle";
+  const { data: creators, isLoading } = useCreatorDirectory(isComingSoon ? undefined : selectedCity);
 
   return (
     <Layout>
@@ -28,14 +29,15 @@ export default function CreatorDirectory() {
             </p>
 
             <Select value={selectedCity} onValueChange={setSelectedCity}>
-              <SelectTrigger className="w-48 h-12 bg-secondary border-border mx-auto">
+              <SelectTrigger className="w-56 h-12 bg-secondary border-border mx-auto">
                 <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CITIES.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
+                <SelectItem value="Seattle">Seattle</SelectItem>
+                {COMING_SOON_CITIES.map((city) => (
+                  <SelectItem key={city} value={city} className="text-muted-foreground">
+                    {city} — Coming Soon
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -47,7 +49,17 @@ export default function CreatorDirectory() {
       {/* Creator Grid */}
       <section className="py-16 md:py-20">
         <div className="container px-4">
-          {isLoading ? (
+          {isComingSoon ? (
+            <div className="text-center py-20 max-w-md mx-auto">
+              <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
+                <Sparkles className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="font-display text-2xl font-bold mb-3">{selectedCity} — Coming Soon</h3>
+              <p className="text-muted-foreground">
+                We're expanding to {selectedCity} soon. For now, explore creators in Seattle.
+              </p>
+            </div>
+          ) : isLoading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Skeleton key={i} className="h-64 rounded-2xl" />
@@ -60,9 +72,7 @@ export default function CreatorDirectory() {
               </div>
               <h3 className="font-display text-2xl font-bold mb-3">No creators found</h3>
               <p className="text-muted-foreground">
-                {selectedCity === "All Cities"
-                  ? "No public creator profiles yet."
-                  : `No creators in ${selectedCity} yet.`}
+                No public creator profiles in Seattle yet.
               </p>
             </div>
           ) : (

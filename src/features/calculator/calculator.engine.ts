@@ -280,7 +280,7 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   cateringGuests: 200,
   cateringCostPerPerson: 12,
   cateringPackageCost: 2500,
-  serviceMarkupPercent: 15,
+  serviceMarkupPercent: 20,
   isProfitShare: false,
-  serviceFeePercent: 15,
+  serviceFeePercent: 20,
 };
