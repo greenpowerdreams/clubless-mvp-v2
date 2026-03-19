@@ -100,11 +100,11 @@ export function DashboardRevenue({ userId }: DashboardRevenueProps) {
               <span className="text-sm">Your Fee Rate</span>
             </div>
             <p className={`text-3xl font-bold ${levelColors.text}`}>
-              {userLevel?.service_fee_percent ?? 15}%
+              {userLevel?.service_fee_percent ?? 20}%
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {userLevel && userLevel.service_fee_percent < 15
-                ? `Saving ${15 - userLevel.service_fee_percent}% as ${userLevel.level_name}`
+              {userLevel && userLevel.service_fee_percent < 20
+                ? `Saving ${20 - userLevel.service_fee_percent}% as ${userLevel.level_name}`
                 : "Complete events to unlock lower fees"}
             </p>
           </CardContent>

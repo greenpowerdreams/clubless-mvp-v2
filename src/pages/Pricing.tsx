@@ -18,11 +18,11 @@ const feeModels = [
     name: "Service Fee",
     badge: "Most Popular",
     description: "Keep the lion's share of your profits with a simple flat fee",
-    fee: "15%",
+    fee: "20%",
     feeLabel: "of net profit",
-    yourCut: "85%",
+    yourCut: "80%",
     highlights: [
-      "Keep 85% of your event profits",
+      "Keep 80% of your event profits",
       "Transparent cost breakdown",
       "No hidden fees ever",
       "Pay only when you profit"
@@ -64,9 +64,9 @@ const includedInBoth = [
 ];
 
 const levelPerks = [
-  { level: "Starter", events: "0-1", fee: "15%", perks: ["Standard support", "Basic calculator"] },
-  { level: "Rising", events: "2-4", fee: "12%", perks: ["Priority support", "Early venue access"] },
-  { level: "Established", events: "5-9", fee: "10%", perks: ["Priority approval", "Best dates priority"] },
+  { level: "Starter", events: "0-1", fee: "20%", perks: ["Standard support", "Basic calculator"] },
+  { level: "Rising", events: "2-4", fee: "16%", perks: ["Priority support", "Early venue access"] },
+  { level: "Established", events: "5-9", fee: "12%", perks: ["Priority approval", "Best dates priority"] },
   { level: "Elite", events: "10+", fee: "8%", perks: ["Dedicated rep", "VIP treatment", "Custom packages"] }
 ];
 
@@ -223,7 +223,7 @@ export default function Pricing() {
                 Lower Fees as You Grow
               </h2>
               <p className="text-muted-foreground max-w-lg mx-auto">
-                Complete more events, unlock lower fees and exclusive perks. 
+                Start at 20% / 80% and earn your way to lower fees.
                 Your success is rewarded.
               </p>
             </div>
