@@ -523,7 +523,7 @@ export default function Calculator() {
                     <Users className="w-5 h-5 text-primary" />
                     Staffing & Services
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">Staff you'll need to run your event — we handle hiring and coordination</p>
+                  <p className="text-sm text-muted-foreground mt-1">Staff you'll need to run your event. We handle hiring and coordination.</p>
                 </div>
                 
                 {/* Smart Staffing Suggestions */}

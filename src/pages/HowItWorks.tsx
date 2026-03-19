@@ -28,7 +28,7 @@ const steps = [
     icon: FileText,
     title: "2. Submit Your Event Proposal",
     description:
-      "Tell us about your event concept—the vibe, the audience, the date. Our team reviews every submission and gets back to you within 48 hours.",
+      "Tell us about your event concept: the vibe, the audience, the date. Our team reviews every submission and gets back to you within 48 hours.",
     details: [
       "Describe your event concept and target audience",
       "Choose your preferred date and time",
@@ -40,7 +40,7 @@ const steps = [
     icon: Handshake,
     title: "3. We Handle the Backend",
     description:
-      "Once approved, we take care of everything behind the scenes. Venue coordination, bar setup, staffing, licensing—you focus on promoting your event.",
+      "Once approved, we take care of everything behind the scenes. Venue coordination, bar setup, staffing, and licensing. You focus on promoting your event.",
     details: [
       "Venue matching and negotiation",
       "Liquor licensing and permits",
@@ -52,7 +52,7 @@ const steps = [
     icon: PartyPopper,
     title: "4. Host Your Event",
     description:
-      "The night of your event, our team is on-site managing bar operations while you do what you do best—creating an unforgettable experience.",
+      "The night of your event, our team is on-site managing bar operations while you do what you do best: creating an unforgettable experience.",
     details: [
       "Full bar service and inventory",
       "Real-time sales tracking",
@@ -106,7 +106,7 @@ export default function HowItWorks() {
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               We've simplified the event hosting process so you can focus on
-              what matters—building your brand and making money.
+              what matters: building your brand and making money.
             </p>
           </div>
         </div>

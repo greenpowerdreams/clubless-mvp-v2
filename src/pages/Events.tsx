@@ -175,7 +175,7 @@ export default function Events() {
               What's <span className="text-primary">Happening</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10">
-              Curated nightlife — real events, real venues, right now
+              Curated nightlife. Real events, real venues, right now.
             </p>
 
             <Select value={String(timeRange)} onValueChange={(v) => setTimeRange(Number(v))}>
@@ -207,7 +207,7 @@ export default function Events() {
                   <Calendar className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <h3 className="font-display text-xl font-bold mb-2">No events listed yet</h3>
-                <p className="text-muted-foreground">Check back soon — new events drop weekly.</p>
+                <p className="text-muted-foreground">Check back soon. New events drop weekly.</p>
               </div>
             ) : (
               <div className="space-y-10">

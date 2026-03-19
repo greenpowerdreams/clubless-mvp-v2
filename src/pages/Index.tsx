@@ -55,7 +55,7 @@ export default function Index() {
 
             {/* Subheadline */}
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up leading-relaxed" style={{ animationDelay: "0.1s" }}>
-              Plan, price, and launch licensed events with transparent costs — without needing a club.
+              Plan, price, and launch licensed events with transparent costs. No club required.
             </p>
 
             {/* CTAs */}
@@ -145,7 +145,7 @@ export default function Index() {
               {
                 icon: DollarSign,
                 title: "Keep More Profit",
-                description: "Traditional venues take up to 80%. We flip the script—you earn 70-85% of bar sales.",
+                description: "Traditional venues take up to 80%. With Clubless, you earn the lion's share of bar sales.",
                 image: IMAGES.features.profit,
                 stat: "85%",
                 statLabel: "Your earnings",
@@ -153,7 +153,7 @@ export default function Index() {
               {
                 icon: Shield,
                 title: "Zero Hassle",
-                description: "Licensing, insurance, permits, staffing, bar setup—all handled. You focus on your vision.",
+                description: "Licensing, insurance, permits, staffing, and bar setup are all handled. You focus on your vision.",
                 image: IMAGES.features.teamwork,
                 stat: "100%",
                 statLabel: "Compliant",

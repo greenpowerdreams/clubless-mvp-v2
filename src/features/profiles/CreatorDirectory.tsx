@@ -2,10 +2,21 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreatorDirectory } from "./hooks/useProfile";
-import { MapPin, Music, CheckCircle2, Sparkles, Users } from "lucide-react";
+import { IMAGES } from "@/lib/images";
+import { MapPin, Music, CheckCircle2, ArrowRight } from "lucide-react";
+
+const GALLERY_IMAGES = [
+  { src: IMAGES.events.dj, label: "DJs" },
+  { src: IMAGES.events.concert, label: "Live Events" },
+  { src: IMAGES.events.party, label: "Parties" },
+  { src: IMAGES.events.rooftop, label: "Rooftops" },
+  { src: IMAGES.events.festival, label: "Festivals" },
+  { src: IMAGES.events.dance, label: "Dance Floors" },
+];
 
 const COMING_SOON_CITIES = ["Los Angeles", "San Francisco", "New York", "Miami", "Austin"];
 
@@ -37,7 +48,7 @@ export default function CreatorDirectory() {
                 <SelectItem value="Seattle">Seattle</SelectItem>
                 {COMING_SOON_CITIES.map((city) => (
                   <SelectItem key={city} value={city} className="text-muted-foreground">
-                    {city} — Coming Soon
+                    {city} (Coming Soon)
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -50,14 +61,26 @@ export default function CreatorDirectory() {
       <section className="py-16 md:py-20">
         <div className="container px-4">
           {isComingSoon ? (
-            <div className="text-center py-20 max-w-md mx-auto">
-              <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
-                <Sparkles className="h-10 w-10 text-muted-foreground" />
+            <div className="max-w-3xl mx-auto text-center py-8">
+              <div className="grid grid-cols-3 gap-3 mb-10">
+                {GALLERY_IMAGES.map((img) => (
+                  <div key={img.src} className="aspect-[4/3] rounded-xl overflow-hidden relative">
+                    <img src={img.src} alt={img.label} className="w-full h-full object-cover opacity-60" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                    <span className="absolute bottom-2 left-0 right-0 text-center text-xs font-medium text-muted-foreground">{img.label}</span>
+                  </div>
+                ))}
               </div>
-              <h3 className="font-display text-2xl font-bold mb-3">{selectedCity} — Coming Soon</h3>
-              <p className="text-muted-foreground">
-                We're expanding to {selectedCity} soon. For now, explore creators in Seattle.
+              <h3 className="font-display text-2xl font-bold mb-3">{selectedCity} Coming Soon</h3>
+              <p className="text-muted-foreground mb-2">
+                We're expanding to {selectedCity}. For now, explore Seattle creators.
               </p>
+              <button
+                onClick={() => setSelectedCity("Seattle")}
+                className="mt-4 text-sm text-primary font-medium hover:underline"
+              >
+                View Seattle creators
+              </button>
             </div>
           ) : isLoading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -66,14 +89,31 @@ export default function CreatorDirectory() {
               ))}
             </div>
           ) : !creators || creators.length === 0 ? (
-            <div className="text-center py-20 max-w-md mx-auto">
-              <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
-                <Users className="h-10 w-10 text-muted-foreground" />
+            <div className="max-w-3xl mx-auto">
+              {/* Gallery grid */}
+              <div className="grid grid-cols-3 gap-3 mb-10">
+                {GALLERY_IMAGES.map((img) => (
+                  <div key={img.src} className="aspect-[4/3] rounded-xl overflow-hidden relative">
+                    <img src={img.src} alt={img.label} className="w-full h-full object-cover opacity-70" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                    <span className="absolute bottom-2 left-0 right-0 text-center text-xs font-medium text-muted-foreground">{img.label}</span>
+                  </div>
+                ))}
               </div>
-              <h3 className="font-display text-2xl font-bold mb-3">No creators found</h3>
-              <p className="text-muted-foreground">
-                No public creator profiles in Seattle yet.
-              </p>
+              {/* Invitation CTA */}
+              <div className="text-center">
+                <span className="font-display text-3xl font-bold text-white tracking-tight block mb-3">clubless</span>
+                <h3 className="font-display text-xl font-bold mb-3">Be the First Creator in Seattle</h3>
+                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                  The Seattle creator scene is just getting started. Join Clubless and build your name in the city.
+                </p>
+                <Button asChild>
+                  <Link to="/submit">
+                    Become a Host
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <>

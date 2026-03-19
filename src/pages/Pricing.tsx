@@ -35,7 +35,7 @@ const feeModels = [
   {
     name: "Profit Share",
     badge: "Zero Risk",
-    description: "We share the risk and the reward — perfect for first-time hosts",
+    description: "We share the risk and the reward. Perfect for first-time hosts.",
     fee: "50/50",
     feeLabel: "profit split",
     yourCut: "50%",

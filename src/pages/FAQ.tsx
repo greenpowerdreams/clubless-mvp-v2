@@ -16,11 +16,11 @@ const faqCategories = [
     faqs: [
       {
         q: "How does the profit split work?",
-        a: "You choose between two models: Service Fee (you keep 85%, we take 15% of net profit) or Profit Share (50/50 split, but we cover more upfront costs). Both models are designed so you only pay when you profit."
+        a: "You choose between two models: Service Fee (you keep 80%, we take 20% of net profit) or Profit Share (50/50 split, but we cover more upfront costs). Both models are designed so you only pay when you profit."
       },
       {
         q: "What costs are covered by Clubless Collective?",
-        a: "We handle venue licensing support, insurance coordination, and operational structure. Staffing costs (bartenders, security) are included in your event budget and deducted before profit calculations—you always see the full breakdown in our calculator."
+        a: "We handle venue licensing support, insurance coordination, and operational structure. Staffing costs (bartenders, security) are included in your event budget and deducted before profit calculations. You always see the full breakdown in our calculator."
       },
       {
         q: "How do I get paid after my event?",
@@ -32,7 +32,7 @@ const faqCategories = [
       },
       {
         q: "What happens if my event doesn't sell enough tickets?",
-        a: "With the Profit Share model, we share the risk with you. With Service Fee, you're responsible for covering costs—but our calculator helps you set realistic targets. We also help with promotion strategies."
+        a: "With the Profit Share model, we share the risk with you. With Service Fee, you're responsible for covering costs, but our calculator helps you set realistic targets. We also help with promotion strategies."
       },
       {
         q: "How long does event approval take?",
@@ -87,7 +87,7 @@ const faqCategories = [
     faqs: [
       {
         q: "What cities do you operate in?",
-        a: "We're currently focused on Seattle, with plans to expand to other cities. If you're interested in hosting events in a new city, reach out—we're always looking to grow."
+        a: "We're currently focused on Seattle, with plans to expand to other cities. If you're interested in hosting events in a new city, reach out. We're always looking to grow."
       },
       {
         q: "Do I need a liquor license to host an event?",

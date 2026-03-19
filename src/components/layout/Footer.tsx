@@ -1,7 +1,6 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
-import { Instagram, Twitter, Mail, ArrowUpRight } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { Instagram, Twitter, Mail } from "lucide-react";
 
 const footerLinks = {
   platform: [
@@ -26,14 +25,10 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
             {/* Brand */}
             <div className="col-span-2">
               <Link to="/" className="inline-flex items-center gap-2 mb-5">
-                <img 
-                  src={logo} 
-                  alt="Clubless Collective" 
-                  className="h-10 w-auto"
-                />
+                <span className="text-white font-bold text-2xl tracking-tight">clubless</span>
               </Link>
               <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-6">
-                Empowering creators to own their events. We handle the logistics—you keep the profits.
+                Empowering creators to own their events. We handle the logistics so you keep the profits.
               </p>
               <div className="flex gap-2">
                 <a
