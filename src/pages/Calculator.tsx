@@ -1047,7 +1047,7 @@ export default function Calculator() {
                           {userLevel.level_name} Discount Applied!
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Your service fee is {userLevel.service_fee_percent}% instead of 20% — saving you {20 - userLevel.service_fee_percent}%
+                          Your service fee is {userLevel.service_fee_percent}% instead of 20%, saving you {20 - userLevel.service_fee_percent}%
                         </p>
                       </div>
                     </div>
