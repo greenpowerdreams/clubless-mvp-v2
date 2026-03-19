@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,6 +30,14 @@ const levelPerks = [
 ];
 
 export default function Pricing() {
+  const [selectedModel, setSelectedModel] = useState<"service-fee" | "profit-share">("service-fee");
+  const calcRef = useRef<HTMLDivElement>(null);
+
+  const selectModel = (model: "service-fee" | "profit-share") => {
+    setSelectedModel(model);
+    calcRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <Layout>
       {/* Brief intro header */}
@@ -49,8 +58,10 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Calculator — embedded inline */}
-      <CalculatorContent />
+      {/* Calculator — embedded inline, keyed to force re-init when model changes */}
+      <div ref={calcRef}>
+        <CalculatorContent key={selectedModel} defaultModel={selectedModel} />
+      </div>
 
       {/* Fee Models — reworked to lead with creator's cut */}
       <section className="py-20 bg-card">
@@ -67,7 +78,14 @@ export default function Pricing() {
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Service Fee */}
-              <div className="relative rounded-2xl p-8 bg-primary text-primary-foreground ring-2 ring-primary">
+              <button
+                onClick={() => selectModel("service-fee")}
+                className={`relative rounded-2xl p-8 text-left w-full transition-all duration-200 ${
+                  selectedModel === "service-fee"
+                    ? "bg-primary text-primary-foreground ring-2 ring-primary scale-[1.01]"
+                    : "bg-primary/80 text-primary-foreground ring-2 ring-primary/40 opacity-80 hover:opacity-100"
+                }`}
+              >
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">
                   Most Popular
                 </Badge>
@@ -104,10 +122,17 @@ export default function Pricing() {
                 <p className="text-xs text-primary-foreground/60">
                   Best for experienced hosts with proven events
                 </p>
-              </div>
+              </button>
 
               {/* Profit Share */}
-              <div className="relative rounded-2xl p-8 bg-card border border-border">
+              <button
+                onClick={() => selectModel("profit-share")}
+                className={`relative rounded-2xl p-8 text-left w-full transition-all duration-200 ${
+                  selectedModel === "profit-share"
+                    ? "bg-card border-2 border-primary scale-[1.01]"
+                    : "bg-card border border-border opacity-80 hover:opacity-100 hover:border-primary/40"
+                }`}
+              >
                 <Badge variant="outline" className="mb-4">Zero Risk</Badge>
 
                 <div className="flex items-center gap-3 mb-4">
@@ -142,8 +167,12 @@ export default function Pricing() {
                 <p className="text-xs text-muted-foreground">
                   Best for new hosts testing the waters
                 </p>
-              </div>
+              </button>
             </div>
+
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Click a model above to update the calculator
+            </p>
           </div>
         </div>
       </section>

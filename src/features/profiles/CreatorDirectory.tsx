@@ -54,7 +54,10 @@ function Filmstrip() {
             <img
               src={src}
               alt="Seattle nightlife"
-              loading="lazy"
+              width={256}
+              height={176}
+              loading={i < 6 ? "eager" : "lazy"}
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>

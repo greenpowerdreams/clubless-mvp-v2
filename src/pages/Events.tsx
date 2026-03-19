@@ -235,10 +235,15 @@ export default function Events() {
                       <div className="space-y-3 ml-[4.25rem]">
                         {dayEvents.map((event, idx) => {
                           const url = event.ticket_url || event.source_url;
+                          const CardWrapper = url ? "a" : "div";
+                          const cardProps = url
+                            ? { href: url, target: "_blank", rel: "noopener noreferrer" }
+                            : {};
                           return (
-                            <div
+                            <CardWrapper
                               key={`${dateKey}-${idx}`}
-                              className="p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors group"
+                              {...(cardProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+                              className="block p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:bg-card/80 transition-all group cursor-pointer"
                             >
                               <div className="flex items-start gap-4">
                                 {event.image_url && /^https?:\/\//i.test(event.image_url) && (
@@ -246,7 +251,8 @@ export default function Events() {
                                     <img
                                       src={event.image_url}
                                       alt={event.name}
-                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                                     />
                                   </div>
@@ -260,15 +266,7 @@ export default function Events() {
                                       )}
                                     </h4>
                                     {url && (
-                                      <a
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex-shrink-0 text-primary hover:text-primary/80 transition-colors"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <ArrowUpRight className="w-4 h-4" />
-                                      </a>
+                                      <ArrowUpRight className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                                     )}
                                   </div>
                                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
@@ -298,7 +296,7 @@ export default function Events() {
                                   </div>
                                 </div>
                               </div>
-                            </div>
+                            </CardWrapper>
                           );
                         })}
                       </div>
