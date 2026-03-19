@@ -4,7 +4,6 @@ import { Layout } from "@/components/layout/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCreatorDirectory } from "./hooks/useProfile";
 import { MapPin, Music, CheckCircle2, ArrowRight } from "lucide-react";
 
@@ -28,7 +27,6 @@ const HERO_IMAGES = [
 ];
 
 function Filmstrip() {
-  // Double the array for seamless infinite loop
   const images = [...HERO_IMAGES, ...HERO_IMAGES];
   return (
     <div
@@ -72,12 +70,48 @@ function Filmstrip() {
   );
 }
 
+function FilmstripCTA({ city, onBack }: { city?: string; onBack?: () => void }) {
+  return (
+    <div className="max-w-4xl mx-auto">
+      <Filmstrip />
+      {city ? (
+        <div className="text-center">
+          <h3 className="font-display text-2xl font-bold mb-3">{city} Coming Soon</h3>
+          <p className="text-muted-foreground mb-4">
+            We're expanding to {city}. For now, explore Seattle creators.
+          </p>
+          <button onClick={onBack} className="text-sm text-primary font-medium hover:underline">
+            View Seattle creators
+          </button>
+        </div>
+      ) : (
+        <div className="text-center">
+          <h3 className="font-display text-2xl font-bold mb-3">Join the Creators of Seattle</h3>
+          <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+            The Seattle scene is building. Host your first event and put your name on the map.
+          </p>
+          <Button asChild>
+            <Link to="/submit">
+              Become a Host
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const COMING_SOON_CITIES = ["Los Angeles", "San Francisco", "New York", "Miami", "Austin"];
 
 export default function CreatorDirectory() {
   const [selectedCity, setSelectedCity] = useState("Seattle");
   const isComingSoon = selectedCity !== "Seattle";
-  const { data: creators, isLoading } = useCreatorDirectory(isComingSoon ? undefined : selectedCity);
+  const { data: creators } = useCreatorDirectory(isComingSoon ? undefined : selectedCity);
+
+  // Show creator grid only once we have confirmed data with results.
+  // Default to filmstrip immediately — no skeleton delay.
+  const hasCreators = creators && creators.length > 0;
 
   return (
     <Layout>
@@ -111,48 +145,12 @@ export default function CreatorDirectory() {
         </div>
       </section>
 
-      {/* Creator Grid */}
+      {/* Content */}
       <section className="py-16 md:py-20">
         <div className="container px-4">
           {isComingSoon ? (
-            <div className="max-w-4xl mx-auto">
-              <Filmstrip />
-              <div className="text-center">
-                <h3 className="font-display text-2xl font-bold mb-3">{selectedCity} Coming Soon</h3>
-                <p className="text-muted-foreground mb-4">
-                  We're expanding to {selectedCity}. For now, explore Seattle creators.
-                </p>
-                <button
-                  onClick={() => setSelectedCity("Seattle")}
-                  className="text-sm text-primary font-medium hover:underline"
-                >
-                  View Seattle creators
-                </button>
-              </div>
-            </div>
-          ) : isLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-64 rounded-2xl" />
-              ))}
-            </div>
-          ) : !creators || creators.length === 0 ? (
-            <div className="max-w-4xl mx-auto">
-              <Filmstrip />
-              <div className="text-center">
-                <h3 className="font-display text-2xl font-bold mb-3">Join the Creators of Seattle</h3>
-                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                  The Seattle scene is building. Host your first event and put your name on the map.
-                </p>
-                <Button asChild>
-                  <Link to="/submit">
-                    Become a Host
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ) : (
+            <FilmstripCTA city={selectedCity} onBack={() => setSelectedCity("Seattle")} />
+          ) : hasCreators ? (
             <>
               <p className="text-muted-foreground mb-8 max-w-5xl mx-auto">
                 <span className="font-semibold text-foreground">{creators.length}</span> creator
@@ -166,17 +164,14 @@ export default function CreatorDirectory() {
                     : `/u/${creator.user_id}`;
 
                   return (
-                    <Link
-                      key={creator.id}
-                      to={linkPath}
-                      className="group block"
-                    >
+                    <Link key={creator.id} to={linkPath} className="group block">
                       <div className="rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 p-6">
                         <div className="flex items-start gap-4 mb-4">
                           {creator.avatar_url ? (
                             <img
                               src={creator.avatar_url}
                               alt=""
+                              loading="lazy"
                               className="w-14 h-14 rounded-full object-cover ring-2 ring-border group-hover:ring-primary/30 transition-colors"
                             />
                           ) : (
@@ -243,6 +238,9 @@ export default function CreatorDirectory() {
                 })}
               </div>
             </>
+          ) : (
+            // Default: show filmstrip immediately — no waiting for API
+            <FilmstripCTA />
           )}
         </div>
       </section>
