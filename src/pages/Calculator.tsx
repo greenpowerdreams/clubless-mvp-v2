@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,8 @@ interface UserLevel {
 }
 
 export default function Calculator() {
+  const [searchParams] = useSearchParams();
+
   // User level state
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -137,15 +139,15 @@ export default function Calculator() {
   const [cateringPackageCost, setCateringPackageCost] = useState(2500);
   
   // Service markup
-  const [serviceMarkupPercent, setServiceMarkupPercent] = useState(15);
-  
-  // Fee model toggle
-  const [isProfitShare, setIsProfitShare] = useState(false);
+  const [serviceMarkupPercent, setServiceMarkupPercent] = useState(20);
 
-  // Get effective service fee (user's level fee or default 15%)
+  // Fee model toggle — pre-select from URL param (?model=profit-share)
+  const [isProfitShare, setIsProfitShare] = useState(() => searchParams.get("model") === "profit-share");
+
+  // Get effective service fee (user's level fee or default 20%)
   const effectiveServiceFee = useMemo(() => {
     if (isProfitShare) return 50; // Profit share is always 50%
-    return userLevel?.service_fee_percent ?? 15;
+    return userLevel?.service_fee_percent ?? 20;
   }, [userLevel, isProfitShare]);
 
   // Smart staffing auto-fill function
@@ -1034,7 +1036,7 @@ export default function Calculator() {
                 </h2>
 
                 {/* User Level Discount Banner */}
-                {isLoggedIn && userLevel && userLevel.service_fee_percent < 15 && !isProfitShare && (
+                {isLoggedIn && userLevel && userLevel.service_fee_percent < 20 && !isProfitShare && (
                   <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -1045,7 +1047,7 @@ export default function Calculator() {
                           {userLevel.level_name} Discount Applied!
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Your service fee is {userLevel.service_fee_percent}% instead of 15% — saving you {15 - userLevel.service_fee_percent}%
+                          Your service fee is {userLevel.service_fee_percent}% instead of 20% — saving you {20 - userLevel.service_fee_percent}%
                         </p>
                       </div>
                     </div>
@@ -1062,7 +1064,7 @@ export default function Calculator() {
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {effectiveServiceFee}% of net profit
-                          {isLoggedIn && userLevel && userLevel.service_fee_percent < 15 && (
+                          {isLoggedIn && userLevel && userLevel.service_fee_percent < 20 && (
                             <span className="ml-1 text-green-400">(Level discount)</span>
                           )}
                         </p>
@@ -1090,7 +1092,7 @@ export default function Calculator() {
                     ? "Profit Share includes premium services: marketing support, venue sourcing, and priority scheduling."
                     : isLoggedIn && userLevel
                       ? `As a ${userLevel.level_name}, you keep ${100 - effectiveServiceFee}% of net profits.`
-                      : "Service Fee is our standard model. You keep 85% of net profits."}
+                      : "Service Fee is our standard model. You keep 80% of net profits."}
                 </p>
               </div>
             </div>

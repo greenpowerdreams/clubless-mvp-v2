@@ -164,12 +164,12 @@ export default function Pricing() {
                   {model.ideal}
                 </p>
                 
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   variant={model.featured ? "secondary" : "default"}
                   asChild
                 >
-                  <Link to="/submit">
+                  <Link to={model.name === "Profit Share" ? "/calculator?model=profit-share" : "/calculator?model=service-fee"}>
                     {model.cta}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
@@ -261,28 +261,56 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* Calculator CTA — primary action */}
       <section className="py-20 bg-card">
         <div className="container px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <Zap className="w-12 h-12 text-primary mx-auto mb-6" />
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-              Ready to Calculate Your Profit?
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              Use our free calculator to see exactly what you could make. 
-              No account required.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" asChild>
-                <Link to="/calculator">
-                  Try the Calculator
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link to="/submit">Submit an Event</Link>
-              </Button>
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-10">
+              <Zap className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+                See Your Numbers First
+              </h2>
+              <p className="text-muted-foreground">
+                Run your event through our profit calculator, then choose your fee model. No account required.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Link
+                to="/calculator?model=service-fee"
+                className="group flex flex-col gap-3 p-6 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="font-display text-lg font-bold">Calculate with 20% Fee</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  You keep 80% of net profit. Best for experienced hosts.
+                </p>
+                <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                  Open Calculator <ArrowRight className="w-4 h-4" />
+                </span>
+              </Link>
+
+              <Link
+                to="/calculator?model=profit-share"
+                className="group flex flex-col gap-3 p-6 rounded-2xl bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-accent" />
+                  </div>
+                  <span className="font-display text-lg font-bold">Calculate with 50/50 Split</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We share risk and reward. Best for first-time hosts.
+                </p>
+                <span className="text-accent text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                  Open Calculator <ArrowRight className="w-4 h-4" />
+                </span>
+              </Link>
             </div>
           </div>
         </div>
