@@ -48,7 +48,15 @@ function formatEventDateShort(dateStr: string) {
 
 function formatTime(timeStr: string) {
   if (!timeStr) return "";
-  const parts = timeStr.split(":");
+  // Handle ranges like "10:00 PM - 2:00 AM" or "10:00 PM - Late" — take first part
+  const first = timeStr.split(" - ")[0].trim();
+  // Already has AM/PM — return as-is (clean up spacing)
+  const upper = first.toUpperCase();
+  if (upper.includes("AM") || upper.includes("PM")) {
+    return first.replace(/\s+/g, " ").trim();
+  }
+  // 24-hour format "HH:MM" or "HH:MM:SS"
+  const parts = first.split(":");
   const h = parseInt(parts[0], 10);
   const m = parseInt(parts[1] ?? "0", 10);
   if (isNaN(h)) return "";
