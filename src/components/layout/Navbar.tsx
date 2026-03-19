@@ -7,7 +7,6 @@ import { useAuth } from "@/features/auth/AuthProvider";
 
 const navLinks = [
   { name: "Events", path: "/events" },
-  { name: "Who's Playing", path: "/whos-playing" },
   { name: "Creators", path: "/creators" },
   { name: "For Hosts", path: "/how-it-works" },
   { name: "Pricing", path: "/pricing" },
