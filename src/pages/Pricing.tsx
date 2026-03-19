@@ -1,56 +1,14 @@
-import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Check, 
-  ArrowRight,
+import {
+  Check,
   Sparkles,
   DollarSign,
   TrendingUp,
   Shield,
-  Zap,
   Crown
 } from "lucide-react";
-
-const feeModels = [
-  {
-    name: "Service Fee",
-    badge: "Most Popular",
-    description: "Keep the lion's share of your profits with a simple flat fee",
-    fee: "20%",
-    feeLabel: "of net profit",
-    yourCut: "80%",
-    highlights: [
-      "Keep 80% of your event profits",
-      "Transparent cost breakdown",
-      "No hidden fees ever",
-      "Pay only when you profit"
-    ],
-    ideal: "Best for experienced hosts with proven events",
-    cta: "Start with Service Fee",
-    featured: true,
-    icon: TrendingUp
-  },
-  {
-    name: "Profit Share",
-    badge: "Zero Risk",
-    description: "We share the risk and the reward. Perfect for first-time hosts.",
-    fee: "50/50",
-    feeLabel: "profit split",
-    yourCut: "50%",
-    highlights: [
-      "Zero upfront costs",
-      "We cover operational expenses",
-      "Mentorship & guidance included",
-      "Lower risk, guaranteed support"
-    ],
-    ideal: "Best for new hosts testing the waters",
-    cta: "Start with Profit Share",
-    featured: false,
-    icon: Shield
-  }
-];
+import { CalculatorContent } from "./Calculator";
 
 const includedInBoth = [
   "Licensed venue booking",
@@ -64,124 +22,134 @@ const includedInBoth = [
 ];
 
 const levelPerks = [
-  { level: "Starter", events: "0-1", fee: "20%", perks: ["Standard support", "Basic calculator"] },
-  { level: "Rising", events: "2-4", fee: "16%", perks: ["Priority support", "Early venue access"] },
-  { level: "Established", events: "5-9", fee: "12%", perks: ["Priority approval", "Best dates priority"] },
-  { level: "Elite", events: "10+", fee: "8%", perks: ["Dedicated rep", "VIP treatment", "Custom packages"] }
+  { level: "Starter", events: "0-1", fee: "20%", yourCut: "80%", perks: ["Standard support", "Basic calculator"] },
+  { level: "Rising", events: "2-4", fee: "16%", yourCut: "84%", perks: ["Priority support", "Early venue access"] },
+  { level: "Established", events: "5-9", fee: "12%", yourCut: "88%", perks: ["Priority approval", "Best dates priority"] },
+  { level: "Elite", events: "10+", fee: "8%", yourCut: "92%", perks: ["Dedicated rep", "VIP treatment", "Custom packages"] }
 ];
 
 export default function Pricing() {
   return (
     <Layout>
-      {/* Hero */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-24">
+      {/* Brief intro header */}
+      <section className="pt-24 pb-6 md:pt-32 md:pb-10">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
               <DollarSign className="w-3 h-3 mr-1" />
               Simple Pricing
             </Badge>
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-5">
-              Fair Pricing.
-              <br />
-              <span className="text-primary">Real Transparency.</span>
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+              See Your Numbers First
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              No hidden fees. No surprise charges. You see exactly what you'll 
-              make before you commit.
+              Run your event through the calculator below. No account required. Then choose the model that works for you.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Fee Models */}
-      <section className="pb-20">
+      {/* Calculator — embedded inline */}
+      <CalculatorContent />
+
+      {/* Fee Models — reworked to lead with creator's cut */}
+      <section className="py-20 bg-card">
         <div className="container px-4">
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {feeModels.map((model) => (
-              <div
-                key={model.name}
-                className={`relative rounded-2xl p-8 ${
-                  model.featured 
-                    ? "bg-primary text-primary-foreground ring-2 ring-primary" 
-                    : "bg-card border border-border"
-                }`}
-              >
-                {model.featured && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">
-                    {model.badge}
-                  </Badge>
-                )}
-                {!model.featured && (
-                  <Badge variant="outline" className="mb-4">
-                    {model.badge}
-                  </Badge>
-                )}
-                
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+                Choose Your Model
+              </h2>
+              <p className="text-muted-foreground">
+                Both models are designed so you only pay when you profit.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Service Fee */}
+              <div className="relative rounded-2xl p-8 bg-primary text-primary-foreground ring-2 ring-primary">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">
+                  Most Popular
+                </Badge>
+
                 <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    model.featured ? "bg-primary-foreground/10" : "bg-muted"
-                  }`}>
-                    <model.icon className={`w-6 h-6 ${
-                      model.featured ? "text-primary-foreground" : "text-primary"
-                    }`} />
+                  <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-primary-foreground" />
                   </div>
-                  <h3 className="font-display text-2xl font-bold">{model.name}</h3>
+                  <h3 className="font-display text-2xl font-bold">Service Fee</h3>
                 </div>
-                
-                <p className={`mb-6 ${model.featured ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                  {model.description}
+
+                <p className="text-primary-foreground/80 mb-6">
+                  Keep the lion's share. Pay a simple flat fee only when you profit.
                 </p>
-                
-                <div className="mb-6">
-                  <span className="font-display text-5xl font-bold">{model.fee}</span>
-                  <span className={`ml-2 ${model.featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                    {model.feeLabel}
-                  </span>
+
+                {/* Creator's cut is the hero number */}
+                <div className="mb-2">
+                  <span className="font-display text-6xl font-bold">80%</span>
+                  <span className="ml-2 text-primary-foreground/70">you keep</span>
                 </div>
-                
-                <div className={`text-sm mb-6 p-3 rounded-lg ${
-                  model.featured ? "bg-primary-foreground/10" : "bg-muted"
-                }`}>
-                  <span className={model.featured ? "text-primary-foreground/70" : "text-muted-foreground"}>
-                    You keep:
-                  </span>
-                  <span className="font-bold text-lg ml-2">{model.yourCut}</span>
-                </div>
-                
+                <p className="text-sm text-primary-foreground/60 mb-6">
+                  Clubless takes 20% of net profit
+                </p>
+
                 <ul className="space-y-3 mb-6">
-                  {model.highlights.map((item, i) => (
+                  {["Keep 80% of your event profits", "Transparent cost breakdown", "No hidden fees ever", "Pay only when you profit"].map((item, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
-                      <Check className={`w-4 h-4 flex-shrink-0 ${
-                        model.featured ? "text-accent" : "text-primary"
-                      }`} />
+                      <Check className="w-4 h-4 flex-shrink-0 text-accent" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
-                
-                <p className={`text-xs mb-6 ${model.featured ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {model.ideal}
+
+                <p className="text-xs text-primary-foreground/60">
+                  Best for experienced hosts with proven events
                 </p>
-                
-                <Button
-                  className="w-full"
-                  variant={model.featured ? "secondary" : "default"}
-                  asChild
-                >
-                  <Link to={model.name === "Profit Share" ? "/calculator?model=profit-share" : "/calculator?model=service-fee"}>
-                    {model.cta}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </Button>
               </div>
-            ))}
+
+              {/* Profit Share */}
+              <div className="relative rounded-2xl p-8 bg-card border border-border">
+                <Badge variant="outline" className="mb-4">Zero Risk</Badge>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-display text-2xl font-bold">Profit Share</h3>
+                </div>
+
+                <p className="text-muted-foreground mb-6">
+                  We share the risk and the reward. Perfect for first-time hosts.
+                </p>
+
+                {/* 50% you keep is still the lead */}
+                <div className="mb-2">
+                  <span className="font-display text-6xl font-bold">50%</span>
+                  <span className="ml-2 text-muted-foreground">you keep</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                  We split profits 50/50 and cover operational expenses
+                </p>
+
+                <ul className="space-y-3 mb-6">
+                  {["Zero upfront costs", "We cover operational expenses", "Mentorship & guidance included", "Lower risk, guaranteed support"].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 flex-shrink-0 text-primary" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-muted-foreground">
+                  Best for new hosts testing the waters
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* What's Included */}
-      <section className="py-20 bg-card">
+      <section className="py-20">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
@@ -192,10 +160,10 @@ export default function Pricing() {
                 Both pricing models include full operational support
               </p>
             </div>
-            
+
             <div className="grid sm:grid-cols-2 gap-4">
               {includedInBoth.map((item, i) => (
-                <div 
+                <div
                   key={i}
                   className="flex items-center gap-3 p-4 rounded-xl bg-secondary"
                 >
@@ -211,7 +179,7 @@ export default function Pricing() {
       </section>
 
       {/* Level System */}
-      <section className="py-20">
+      <section className="py-20 bg-card">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -220,32 +188,29 @@ export default function Pricing() {
                 Host Levels
               </Badge>
               <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-                Lower Fees as You Grow
+                You Keep More as You Grow
               </h2>
               <p className="text-muted-foreground max-w-lg mx-auto">
-                Start at 20% / 80% and earn your way to lower fees.
-                Your success is rewarded.
+                Start keeping 80%. Keep more with every event you host.
               </p>
             </div>
-            
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {levelPerks.map((level, i) => (
-                <div 
+                <div
                   key={level.level}
                   className={`p-6 rounded-xl border ${
                     i === 3 ? "bg-primary/5 border-primary/20" : "bg-card border-border"
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-1">
                     {i === 3 && <Crown className="w-4 h-4 text-accent" />}
                     <h4 className="font-display font-bold">{level.level}</h4>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {level.events} events
-                  </p>
-                  <p className="font-display text-3xl font-bold text-primary mb-4">
-                    {level.fee}
-                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">{level.events} events</p>
+                  {/* Lead with what they keep */}
+                  <p className="font-display text-3xl font-bold text-primary mb-0.5">{level.yourCut}</p>
+                  <p className="text-xs text-muted-foreground mb-4">you keep ({level.fee} fee)</p>
                   <ul className="space-y-2">
                     {level.perks.map((perk, j) => (
                       <li key={j} className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -256,61 +221,6 @@ export default function Pricing() {
                   </ul>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Calculator CTA — primary action */}
-      <section className="py-20 bg-card">
-        <div className="container px-4">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-10">
-              <Zap className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-                See Your Numbers First
-              </h2>
-              <p className="text-muted-foreground">
-                Run your event through our profit calculator, then choose your fee model. No account required.
-              </p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Link
-                to="/calculator?model=service-fee"
-                className="group flex flex-col gap-3 p-6 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="font-display text-lg font-bold">Calculate with 20% Fee</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  You keep 80% of net profit. Best for experienced hosts.
-                </p>
-                <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                  Open Calculator <ArrowRight className="w-4 h-4" />
-                </span>
-              </Link>
-
-              <Link
-                to="/calculator?model=profit-share"
-                className="group flex flex-col gap-3 p-6 rounded-2xl bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-accent" />
-                  </div>
-                  <span className="font-display text-lg font-bold">Calculate with 50/50 Split</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  We share risk and reward. Best for first-time hosts.
-                </p>
-                <span className="text-accent text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                  Open Calculator <ArrowRight className="w-4 h-4" />
-                </span>
-              </Link>
             </div>
           </div>
         </div>

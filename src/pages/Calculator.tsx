@@ -58,7 +58,7 @@ interface UserLevel {
   service_fee_percent: number;
 }
 
-export default function Calculator() {
+export function CalculatorContent({ defaultModel }: { defaultModel?: string } = {}) {
   const [searchParams] = useSearchParams();
 
   // User level state
@@ -141,8 +141,8 @@ export default function Calculator() {
   // Service markup
   const [serviceMarkupPercent, setServiceMarkupPercent] = useState(20);
 
-  // Fee model toggle — pre-select from URL param (?model=profit-share)
-  const [isProfitShare, setIsProfitShare] = useState(() => searchParams.get("model") === "profit-share");
+  // Fee model toggle — pre-select from prop or URL param (?model=profit-share)
+  const [isProfitShare, setIsProfitShare] = useState(() => (defaultModel ?? searchParams.get("model")) === "profit-share");
 
   // Get effective service fee (user's level fee or default 20%)
   const effectiveServiceFee = useMemo(() => {
@@ -337,7 +337,7 @@ export default function Calculator() {
     : 0;
 
   return (
-    <Layout>
+    <>
       <section className="pt-12 pb-20 md:pt-20 md:pb-32">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center mb-8">
@@ -1266,6 +1266,14 @@ export default function Calculator() {
           </div>
         </div>
       </section>
+    </>
+  );
+}
+
+export default function Calculator() {
+  return (
+    <Layout>
+      <CalculatorContent />
     </Layout>
   );
 }
