@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Lock, Sparkles } from "lucide-react";
+import { Mail, Lock, Sparkles, ArrowLeft } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +15,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   // Get redirect destination from state (e.g., from submit page)
   const redirectTo = location.state?.redirectTo || "/portal";
@@ -85,6 +87,134 @@ export default function Login() {
     }
   };
 
+  const handleSendOtp = async () => {
+    if (!email.trim()) {
+      toast({ title: "Enter your email first", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: false },
+      });
+      if (error) throw error;
+      setOtpSent(true);
+      toast({
+        title: "Code sent!",
+        description: "Check your email for a 6-digit verification code.",
+      });
+    } catch (error) {
+      console.error("OTP error:", error);
+      toast({
+        title: "Failed to send code",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otpCode.trim(),
+        type: "email",
+      });
+      if (error) throw error;
+      toast({
+        title: "Welcome back!",
+        description: "Redirecting to your dashboard...",
+      });
+    } catch (error) {
+      console.error("OTP verify error:", error);
+      toast({
+        title: "Verification failed",
+        description: error instanceof Error ? error.message : "Invalid code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // OTP verification step
+  if (otpSent) {
+    return (
+      <Layout>
+        <section className="min-h-[70vh] flex items-center justify-center py-12">
+          <div className="container px-4">
+            <div className="max-w-md mx-auto">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
+                  <Mail className="w-8 h-8 text-primary" />
+                </div>
+                <h1 className="font-display text-2xl font-bold mb-2">Check Your Email</h1>
+                <p className="text-muted-foreground">
+                  We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+                </p>
+              </div>
+
+              <div className="glass rounded-2xl p-8">
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="otp">Verification Code</Label>
+                    <Input
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123456"
+                      required
+                      className="text-center text-2xl tracking-[0.5em] bg-secondary/50 font-mono"
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    className="w-full"
+                    disabled={isLoading || otpCode.length < 6}
+                  >
+                    {isLoading ? "Verifying..." : "Verify & Sign In"}
+                  </Button>
+                </form>
+
+                <div className="mt-4 flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                    onClick={handleSendOtp}
+                    disabled={isLoading}
+                  >
+                    Resend code
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                    onClick={() => { setOtpSent(false); setOtpCode(""); }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to login
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <section className="min-h-[70vh] flex items-center justify-center py-12">
@@ -123,8 +253,8 @@ export default function Login() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="password">Password</Label>
-                    <Link 
-                      to="/forgot-password" 
+                    <Link
+                      to="/forgot-password"
                       className="text-xs text-primary hover:underline"
                     >
                       Forgot password?
@@ -156,22 +286,23 @@ export default function Login() {
 
               <div className="mt-6 pt-6 border-t border-border">
                 <p className="text-xs text-muted-foreground text-center mb-3">
-                  Or sign in with a magic link
+                  Or sign in with an email code
                 </p>
                 <Button
                   variant="outline"
                   className="w-full"
-                  asChild
+                  onClick={handleSendOtp}
+                  disabled={isLoading}
                 >
-                  <Link to="/portal/login">Use Magic Link Instead</Link>
+                  {isLoading ? "Sending..." : "Send Me a Code Instead"}
                 </Button>
               </div>
             </div>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
               Don't have an account?{" "}
-              <Link 
-                to="/signup" 
+              <Link
+                to="/signup"
                 state={{ redirectTo, preservedState }}
                 className="text-primary hover:underline"
               >

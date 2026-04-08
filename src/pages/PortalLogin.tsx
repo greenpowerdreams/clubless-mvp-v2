@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Lock, Sparkles } from "lucide-react";
+import { Mail, Lock, Sparkles, ArrowLeft } from "lucide-react";
 
 export default function PortalLogin() {
   const navigate = useNavigate();
@@ -15,7 +15,8 @@ export default function PortalLogin() {
   const [mode, setMode] = useState<"login" | "magic">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -63,7 +64,7 @@ export default function PortalLogin() {
     }
   };
 
-  const handleMagicLink = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -71,21 +72,21 @@ export default function PortalLogin() {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          emailRedirectTo: `${window.location.origin}/portal`,
+          shouldCreateUser: false,
         },
       });
 
       if (error) throw error;
 
-      setMagicLinkSent(true);
+      setOtpSent(true);
       toast({
-        title: "Magic link sent!",
-        description: "Check your email for the login link.",
+        title: "Code sent!",
+        description: "Check your email for a 6-digit verification code.",
       });
     } catch (error) {
-      console.error("Magic link error:", error);
+      console.error("OTP error:", error);
       toast({
-        title: "Failed to send magic link",
+        title: "Failed to send code",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
@@ -94,23 +95,101 @@ export default function PortalLogin() {
     }
   };
 
-  if (magicLinkSent) {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otpCode.trim(),
+        type: "email",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Welcome back!",
+        description: "Redirecting to your dashboard...",
+      });
+    } catch (error) {
+      console.error("OTP verify error:", error);
+      toast({
+        title: "Verification failed",
+        description: error instanceof Error ? error.message : "Invalid code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // OTP verification step
+  if (otpSent) {
     return (
       <Layout>
         <section className="min-h-[70vh] flex items-center justify-center py-12">
           <div className="container px-4">
-            <div className="max-w-md mx-auto text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
-                <Mail className="w-8 h-8 text-primary" />
+            <div className="max-w-md mx-auto">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
+                  <Mail className="w-8 h-8 text-primary" />
+                </div>
+                <h1 className="font-display text-2xl font-bold mb-2">Check Your Email</h1>
+                <p className="text-muted-foreground">
+                  We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+                </p>
               </div>
-              <h1 className="font-display text-2xl font-bold mb-4">Check Your Email</h1>
-              <p className="text-muted-foreground mb-6">
-                We sent a magic link to <strong className="text-foreground">{email}</strong>.
-                Click the link to sign in to your dashboard.
-              </p>
-              <Button variant="outline" onClick={() => setMagicLinkSent(false)}>
-                Try another email
-              </Button>
+
+              <div className="glass rounded-2xl p-8">
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="otp">Verification Code</Label>
+                    <Input
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123456"
+                      required
+                      className="text-center text-2xl tracking-[0.5em] bg-secondary/50 font-mono"
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    className="w-full"
+                    disabled={isLoading || otpCode.length < 6}
+                  >
+                    {isLoading ? "Verifying..." : "Verify & Sign In"}
+                  </Button>
+                </form>
+
+                <div className="mt-4 flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                    onClick={handleSendOtp}
+                    disabled={isLoading}
+                  >
+                    Resend code
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                    onClick={() => { setOtpSent(false); setOtpCode(""); }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Try a different email
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -128,10 +207,10 @@ export default function PortalLogin() {
                 <Sparkles className="w-8 h-8 text-primary-foreground" />
               </div>
               <h1 className="font-display text-3xl font-bold mb-2">
-                Magic Link <span className="text-primary">Login</span>
+                Welcome <span className="text-primary">Back</span>
               </h1>
               <p className="text-muted-foreground">
-                Sign in without a password
+                Sign in to your Host Portal
               </p>
             </div>
 
@@ -186,7 +265,7 @@ export default function PortalLogin() {
                   </Button>
                 </form>
               ) : (
-                <form onSubmit={handleMagicLink} className="space-y-4">
+                <form onSubmit={handleSendOtp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="magic-email">Email</Label>
                     <div className="relative">
@@ -208,10 +287,10 @@ export default function PortalLogin() {
                     className="w-full"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Sending..." : "Send Magic Link"}
+                    {isLoading ? "Sending..." : "Send Verification Code"}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    We'll email you a secure link to sign in.
+                    We'll email you a 6-digit code to sign in.
                   </p>
                 </form>
               )}
@@ -232,7 +311,7 @@ export default function PortalLogin() {
                   size="sm"
                   onClick={() => setMode("magic")}
                 >
-                  Magic Link
+                  Email Code
                 </Button>
               </div>
             </div>
