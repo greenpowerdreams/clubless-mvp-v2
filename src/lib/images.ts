@@ -1,5 +1,5 @@
 /**
- * Central image configuration for Clubless Collective
+ * Central image configuration for Clubless
  * All images are from Unsplash with proper licensing
  * Images can be swapped by updating URLs here
  */
@@ -70,45 +70,7 @@ export const IMAGES = {
   },
 } as const;
 
-// Featured events for homepage (mock data for display)
-export const FEATURED_EVENTS_MOCK = [
-  {
-    id: "1",
-    title: "Neon Nights: Afrohouse Edition",
-    date: "Feb 14, 2026",
-    city: "Los Angeles",
-    price: 35,
-    image: IMAGES.events.party,
-    theme: "Afrohouse",
-  },
-  {
-    id: "2",
-    title: "Rooftop Sunset Sessions",
-    date: "Feb 21, 2026",
-    city: "Miami",
-    price: 50,
-    image: IMAGES.events.rooftop,
-    theme: "House",
-  },
-  {
-    id: "3",
-    title: "Underground: Techno All Night",
-    date: "Feb 28, 2026",
-    city: "New York",
-    price: 40,
-    image: IMAGES.events.club,
-    theme: "Techno",
-  },
-  {
-    id: "4",
-    title: "R&B Rendezvous",
-    date: "Mar 7, 2026",
-    city: "San Diego",
-    price: 45,
-    image: IMAGES.events.lounge,
-    theme: "R&B",
-  },
-];
+// FEATURED_EVENTS_MOCK removed — fake cities/dates. Fetch real events from Supabase instead.
 
 // Vendor categories with images
 export const VENDOR_CATEGORIES_WITH_IMAGES = [
@@ -154,32 +116,56 @@ export const VENDOR_CATEGORIES_WITH_IMAGES = [
     image: IMAGES.vendors.decor,
     count: 12,
   },
+  {
+    id: "florist",
+    label: "Florist",
+    description: "Floral arrangements & design",
+    image: "https://images.unsplash.com/photo-1487530811015-780f08dcb84d?w=600&q=80",
+    count: 0,
+  },
+  {
+    id: "photographer",
+    label: "Photography",
+    description: "Professional event photographers",
+    image: "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=600&q=80",
+    count: 0,
+  },
+  {
+    id: "lighting",
+    label: "Lighting",
+    description: "Event lighting & ambiance design",
+    image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&q=80",
+    count: 0,
+  },
+  {
+    id: "entertainment",
+    label: "Entertainment",
+    description: "Live acts, performers & more",
+    image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600&q=80",
+    count: 0,
+  },
+  {
+    id: "transportation",
+    label: "Transportation",
+    description: "Shuttles, limos & event transit",
+    image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&q=80",
+    count: 0,
+  },
+  {
+    id: "furniture_rental",
+    label: "Furniture Rental",
+    description: "Tables, chairs, lounge furniture",
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+    count: 0,
+  },
 ];
 
-// Testimonials data
-export const TESTIMONIALS = [
-  {
-    id: "1",
-    name: "Marcus Johnson",
-    role: "Event Creator",
-    avatar: IMAGES.testimonials.avatar1,
-    quote: "I made more profit from one Clubless event than six months of club promotions. The transparency is unreal.",
-    rating: 5,
-  },
-  {
-    id: "2",
-    name: "Jasmine Torres",
-    role: "DJ & Event Host",
-    avatar: IMAGES.testimonials.avatar2,
-    quote: "Finally, a platform that lets creators keep what we earn. The profit calculator sold me instantly.",
-    rating: 5,
-  },
-  {
-    id: "3",
-    name: "David Chen",
-    role: "Catering Vendor",
-    avatar: IMAGES.testimonials.avatar3,
-    quote: "As a vendor, the steady flow of quality events has grown my business 3x in six months.",
-    rating: 5,
-  },
-];
+// Testimonials — empty until real creator quotes are collected
+export const TESTIMONIALS: Array<{
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  quote: string;
+  rating: number;
+}> = [];

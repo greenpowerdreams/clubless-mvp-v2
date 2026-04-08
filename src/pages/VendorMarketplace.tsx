@@ -9,8 +9,9 @@ import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { ComingSoonVendors } from "@/components/waitlist/ComingSoonVendors";
 import { supabase } from "@/integrations/supabase/client";
 import { IMAGES, VENDOR_CATEGORIES_WITH_IMAGES } from "@/lib/images";
-import { 
-  Store, 
+import { EVENT_TYPES } from "@/lib/eventTypes";
+import {
+  Store,
   Search,
   Star,
   MapPin,
@@ -49,6 +50,15 @@ const VENDOR_CATEGORIES = [
   { value: "photo_video", label: "Photo/Video" },
   { value: "staffing", label: "Staffing" },
   { value: "dj_equipment", label: "DJ Equipment" },
+  { value: "florist", label: "Florist" },
+  { value: "photographer", label: "Photography" },
+  { value: "videographer", label: "Videographer" },
+  { value: "officiant", label: "Officiant" },
+  { value: "cake_maker", label: "Cakes" },
+  { value: "furniture_rental", label: "Furniture Rental" },
+  { value: "lighting", label: "Lighting" },
+  { value: "transportation", label: "Transportation" },
+  { value: "entertainment", label: "Entertainment" },
   { value: "other", label: "Other" },
 ];
 
@@ -61,6 +71,15 @@ const CATEGORY_ICONS: Record<string, string> = {
   photo_video: "📸",
   staffing: "👥",
   dj_equipment: "🎧",
+  florist: "🌸",
+  photographer: "📷",
+  videographer: "🎥",
+  officiant: "💍",
+  cake_maker: "🎂",
+  furniture_rental: "🛋️",
+  lighting: "💡",
+  transportation: "🚌",
+  entertainment: "🎭",
   other: "📦",
 };
 
@@ -71,6 +90,7 @@ export default function VendorMarketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedCity, setSelectedCity] = useState("all");
+  const [selectedEventType, setSelectedEventType] = useState("all");
 
   useEffect(() => {
     fetchVendors();
@@ -107,17 +127,29 @@ export default function VendorMarketplace() {
     }).format(cents / 100);
   };
 
+  // Categories allowed for the selected event type
+  const allowedCategories = selectedEventType === "all"
+    ? null
+    : EVENT_TYPES.find((e) => e.id === selectedEventType)?.vendorCategories ?? null;
+
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vendor.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesCategory = selectedCategory === "all" || vendor.category === selectedCategory;
-    
-    const matchesCity = selectedCity === "all" || 
+
+    const matchesCity = selectedCity === "all" ||
       vendor.service_area?.some(area => area.toLowerCase().includes(selectedCity.toLowerCase()));
 
-    return matchesSearch && matchesCategory && matchesCity;
+    const matchesEventType = !allowedCategories || allowedCategories.includes(vendor.category as never);
+
+    return matchesSearch && matchesCategory && matchesCity && matchesEventType;
   });
+
+  // Visible category tiles — scoped by event type when one is selected
+  const visibleCategoryTiles = allowedCategories
+    ? VENDOR_CATEGORIES_WITH_IMAGES.filter((c) => allowedCategories.includes(c.id as never))
+    : VENDOR_CATEGORIES_WITH_IMAGES;
 
   const allCities = [...new Set(vendors.flatMap(v => v.service_area || []))].sort();
   const hasVerifiedVendors = vendors.length > 0;
@@ -151,7 +183,7 @@ export default function VendorMarketplace() {
               Vendor <span className="text-accent">Marketplace</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8">
-              Verified vendors ready to make your event amazing
+              Vetted vendors for every part of your night
             </p>
             <Button variant="outline" asChild>
               <Link to="/vendor/apply">Become a Vendor</Link>
@@ -168,9 +200,40 @@ export default function VendorMarketplace() {
             <ComingSoonVendors />
           ) : (
             <div className="max-w-5xl mx-auto">
+              {/* Event Type Filter Tabs */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <button
+                  onClick={() => { setSelectedEventType("all"); setSelectedCategory("all"); }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    selectedEventType === "all"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  All Events
+                </button>
+                {EVENT_TYPES.map((type) => {
+                  const Icon = type.Icon;
+                  return (
+                    <button
+                      key={type.id}
+                      onClick={() => { setSelectedEventType(type.id); setSelectedCategory("all"); }}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedEventType === type.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {type.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Category Navigation */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
-                {VENDOR_CATEGORIES_WITH_IMAGES.map((category) => (
+                {visibleCategoryTiles.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(selectedCategory === category.id ? "all" : category.id)}

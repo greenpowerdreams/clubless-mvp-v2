@@ -143,7 +143,7 @@ export default function VendorApply() {
                 Application Received!
               </h1>
               <p className="text-muted-foreground mb-8">
-                Thanks for applying to join the Clubless Collective vendor network. 
+                Thanks for applying to join the Clubless vendor network.
                 We'll review your application and reach out within 3-5 business days.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -174,7 +174,7 @@ export default function VendorApply() {
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-5">
               Grow Your Business
               <br />
-              <span className="text-primary">With Clubless Collective</span>
+              <span className="text-primary">With Clubless</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
               Join our verified vendor network and connect with event creators 

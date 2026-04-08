@@ -7,9 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { 
-  Calendar, 
-  MapPin, 
+import {
+  Calendar,
+  MapPin,
   DollarSign,
   Ticket,
   TrendingUp,
@@ -21,6 +21,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { format } from "date-fns";
+import { HostCalendarView } from "@/components/dashboard/HostCalendarView";
 
 interface Event {
   id: string;
@@ -277,13 +278,24 @@ export default function CreatorDashboard() {
               </Card>
             </div>
 
+            <Tabs defaultValue="events" className="space-y-6">
+              <TabsList className="glass">
+                <TabsTrigger value="events">My Events</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="calendar">
+                {user && <HostCalendarView userId={user.id} />}
+              </TabsContent>
+
+              <TabsContent value="events">
             {events.length === 0 ? (
               <Card className="glass text-center py-12">
                 <CardContent>
                   <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No events yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    Create your first event to start selling tickets
+                    Submit your first event and start building your night.
                   </p>
                   <Button variant="default" asChild>
                     <Link to="/submit">Create Event</Link>
@@ -301,8 +313,8 @@ export default function CreatorDashboard() {
                         key={event.id}
                         onClick={() => setSelectedEventId(event.id)}
                         className={`w-full p-4 rounded-xl text-left transition-colors ${
-                          selectedEventId === event.id 
-                            ? "bg-primary/20 border border-primary/40" 
+                          selectedEventId === event.id
+                            ? "bg-primary/20 border border-primary/40"
                             : "bg-secondary/50 hover:bg-secondary/80 border border-transparent"
                         }`}
                       >
@@ -569,6 +581,8 @@ export default function CreatorDashboard() {
                 </div>
               </div>
             )}
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </section>

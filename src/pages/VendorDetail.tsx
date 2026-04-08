@@ -163,29 +163,102 @@ export default function VendorDetail() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.email || !formData.message) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    setSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast.success("Quote request sent!", {
-      description: `${vendor?.business_name} will get back to you soon.`
-    });
+    if (formData.selectedServices.length === 0) {
+      toast.error("Please select at least one service to request a quote for");
+      return;
+    }
 
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      eventDate: "",
-      message: "",
-      selectedServices: [],
-    });
-    
-    setSubmitting(false);
+    // Auth check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please sign in to request a quote");
+      return;
+    }
+
+    // Fetch the user's most recent event to satisfy the event_id FK
+    const { data: userEvents } = await supabase
+      .from("events")
+      .select("id, title")
+      .eq("creator_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (!userEvents || userEvents.length === 0) {
+      toast.error("You need to have an event to request vendor quotes. Create an event first.");
+      return;
+    }
+
+    const eventId = userEvents[0].id;
+
+    setSubmitting(true);
+
+    try {
+      // Insert one quote row per selected service
+      const inserts = formData.selectedServices.map((serviceId) => ({
+        event_id: eventId,
+        vendor_service_id: serviceId,
+        status: "requested" as const,
+        quoted_price: null,
+        notes: formData.message,
+        details_json: {
+          requester_name: formData.name,
+          requester_email: formData.email,
+          requester_phone: formData.phone || null,
+          event_date: formData.eventDate || null,
+        },
+      }));
+
+      const { error } = await supabase
+        .from("event_vendor_quotes")
+        .insert(inserts);
+
+      if (error) throw error;
+
+      // Try to send email notification — non-blocking
+      if (vendor?.contact_email) {
+        try {
+          const selectedServiceTitles = formData.selectedServices
+            .map((sid) => services.find((s) => s.id === sid)?.title)
+            .filter(Boolean)
+            .join(", ");
+
+          await supabase.functions.invoke("send-status-email", {
+            body: {
+              to: vendor.contact_email,
+              subject: "New quote request on Clubless",
+              eventName: userEvents[0].title,
+              vendorName: vendor.business_name,
+              message: formData.message,
+              services: selectedServiceTitles,
+              type: "quote_request",
+            },
+          });
+        } catch {
+          // Email failure is non-fatal — DB insert already succeeded
+        }
+      }
+
+      toast.success("Quote request sent! The vendor will be notified.");
+
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        eventDate: "",
+        message: "",
+        selectedServices: [],
+      });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -394,7 +467,7 @@ export default function VendorDetail() {
                     <Star className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
                     <p className="text-muted-foreground">No reviews yet.</p>
                     <p className="text-sm text-muted-foreground/70 mt-1">
-                      Be the first to work with {vendor.business_name}!
+                      Book this vendor and share your experience.
                     </p>
                   </div>
                 </div>
@@ -402,7 +475,7 @@ export default function VendorDetail() {
 
               {/* Quote Request Sidebar */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24">
+                <div className="md:sticky md:top-24">
                   <div className="rounded-xl bg-card border border-border p-6">
                     <div className="flex items-center gap-2 mb-1">
                       <Send className="w-5 h-5 text-primary" />
@@ -414,7 +487,7 @@ export default function VendorDetail() {
                     
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor="name" className="text-sm">Your Name *</Label>
+                        <Label htmlFor="name" className="text-sm">Full Name *</Label>
                         <Input
                           id="name"
                           placeholder="John Doe"

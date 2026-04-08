@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
+import { IMAGES } from "@/lib/images";
 import {
   ArrowRight,
   Calculator,
@@ -14,100 +16,112 @@ import {
 const steps = [
   {
     icon: Calculator,
-    title: "1. Calculate Your Profit",
+    title: "1. Plan Your Numbers",
     description:
-      "Use our free profit calculator to estimate your earnings based on expected attendance, ticket prices, and bar sales. Get a clear picture before you commit to anything.",
+      "Use our free calculator to see your full event breakdown by event type. Club night, wedding, corporate, birthday -- run any scenario before committing to anything.",
     details: [
-      "Input your expected guest count",
-      "Set ticket price and bar spend estimates",
-      "See projected revenue and Clubless fees",
-      "Understand your take-home profit",
+      "Pick your event type and guest count",
+      "Know your take-home before you book anything",
     ],
   },
   {
     icon: FileText,
-    title: "2. Submit Your Event Proposal",
+    title: "2. Submit Your Event",
     description:
-      "Tell us about your event concept—the vibe, the audience, the date. Our team reviews every submission and gets back to you within 48 hours.",
+      "Tell us your concept, date, and what you need. Our team reviews every submission and responds within 48 hours.",
     details: [
-      "Describe your event concept and target audience",
-      "Choose your preferred date and time",
-      "Specify your expected attendance",
-      "Share any special requirements",
+      "Describe your event and what you need",
+      "We respond within 48 hours",
     ],
   },
   {
     icon: Handshake,
-    title: "3. We Handle the Backend",
+    title: "3. Get Matched With Vendors",
     description:
-      "Once approved, we take care of everything behind the scenes. Venue coordination, bar setup, staffing, licensing—you focus on promoting your event.",
+      "We match you with verified vendors from our marketplace: bartenders, caterers, security, photographers, and more. All coordinated through the platform.",
     details: [
-      "Venue matching and negotiation",
-      "Liquor licensing and permits",
-      "Professional bar staff",
-      "Point of sale systems",
+      "Verified vendors with real pricing and reviews",
+      "Seattle: we provide licensed bar service directly",
     ],
   },
   {
     icon: PartyPopper,
     title: "4. Host Your Event",
     description:
-      "The night of your event, our team is on-site managing bar operations while you do what you do best—creating an unforgettable experience.",
+      "Show up and run your event. Our vendor network handles their piece. You focus on the experience.",
     details: [
-      "Full bar service and inventory",
-      "Real-time sales tracking",
-      "On-site event support",
-      "Professional bartenders and security",
+      "Vendors arrive and set up independently",
+      "Everything coordinated in advance. No day-of surprises.",
     ],
   },
   {
     icon: Wallet,
-    title: "5. Get Paid Fast",
+    title: "5. See Your Revenue Breakdown",
     description:
-      "Within 72 hours of your event, you receive a detailed revenue breakdown and your payout. No chasing checks, no waiting months.",
+      "Within 48 hours of your event, you get a full itemized revenue report: what came in, what the fees were, and what you're owed. Payout coordination is handled directly.",
     details: [
-      "Itemized revenue report",
-      "Direct deposit within 72 hours",
-      "Transparent fee breakdown",
-      "Performance analytics",
+      "Full itemized revenue and fee breakdown",
+      "Attendee data export. You own your guest list.",
     ],
   },
 ];
 
 const fees = [
   {
-    name: "Bar Revenue Share",
-    rate: "15-30%",
+    name: "Nightlife / Club Nights",
+    rate: "8-10%",
     description:
-      "Based on event size and services needed. The rest is yours to keep.",
+      "Of net ticket revenue. Rate drops as you host more events. Ticketing fee (5% or $1.50 flat) paid by the buyer, not you.",
   },
   {
-    name: "Platform Fee",
-    rate: "$0",
+    name: "Weddings",
+    rate: "8%",
     description:
-      "No monthly fees, no subscription costs. We only make money when you do.",
+      "Of what you spend on vendors through Clubless. Applies only to vendor services booked through the platform, not your total event budget.",
   },
   {
-    name: "Payment Processing",
-    rate: "2.9% + $0.30",
-    description: "Standard payment processing fees for ticket sales (if any).",
+    name: "Corporate Events",
+    rate: "10%",
+    description:
+      "Of what you spend on vendors through Clubless. No fee on events where no vendors are booked.",
+  },
+  {
+    name: "Birthdays and Small Events",
+    rate: "$29-$49",
+    description:
+      "Flat fee per event. No percentage taken.",
   },
 ];
+
 
 export default function HowItWorks() {
   return (
     <Layout>
       {/* Hero */}
-      <section className="pt-12 pb-20 md:pt-20 md:pb-32">
-        <div className="container px-4">
+      <section className="relative min-h-[320px] flex items-center overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
+        <div className="absolute inset-0">
+          <ImageWithFallback
+            src={IMAGES.features.planning}
+            alt="Event planning session"
+            className="w-full h-full"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
+        </div>
+        <div className="container px-4 relative">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               How <span className="text-primary">Clubless</span> Works
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              We've simplified the event hosting process so you can focus on
-              what matters—building your brand and making money.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+              Event hosting without the middleman. Keep more money, stay in
+              control, and bring people to your night.
             </p>
+            <Button asChild size="lg" className="group">
+              <Link to="/calculator">
+                Try the Calculator
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -196,8 +210,7 @@ export default function HowItWorks() {
             </div>
 
             <p className="text-center text-sm text-muted-foreground mt-8">
-              * Bar revenue share varies based on event size, venue, and
-              services required. You'll see exact fees in your profit estimate.
+              All creators own their full attendee data. Export your guest list any time, no paywall, no restrictions.
             </p>
           </div>
         </div>
@@ -211,8 +224,8 @@ export default function HowItWorks() {
               Ready to See Your <span className="text-primary">Numbers?</span>
             </h2>
             <p className="text-muted-foreground mb-8">
-              Use our profit calculator to model your event and see exactly how
-              much you could earn.
+              Use our event planner to map out your full event and see your
+              cost breakdown before you commit.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="default" size="lg" asChild>

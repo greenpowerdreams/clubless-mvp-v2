@@ -16,15 +16,15 @@ const faqCategories = [
     faqs: [
       {
         q: "How does the profit split work?",
-        a: "You choose between two models: Service Fee (you keep 85%, we take 15% of net profit) or Profit Share (50/50 split, but we cover more upfront costs). Both models are designed so you only pay when you profit."
+        a: "You choose between two models: Service Fee (you keep 80%, we take 20% of net profit) or Profit Share (50/50 split, but we cover more upfront costs). Both models are designed so you only pay when you profit."
       },
       {
-        q: "What costs are covered by Clubless Collective?",
-        a: "We handle venue licensing support, insurance coordination, and operational structure. Staffing costs (bartenders, security) are included in your event budget and deducted before profit calculations—you always see the full breakdown in our calculator."
+        q: "What costs are covered by Clubless?",
+        a: "We handle venue licensing support, insurance coordination, and operational structure. Staffing costs (bartenders, security) are included in your event budget and deducted before profit calculations. You always see the full breakdown in our calculator."
       },
       {
         q: "How do I get paid after my event?",
-        a: "Payouts are processed within 72 hours after your event completes. We send funds directly to your connected bank account via Stripe. You'll receive an email confirmation with a full breakdown."
+        a: "After your event, you'll receive a full itemized revenue breakdown by email. Our team processes payouts and will reach out to coordinate your payment. You'll always know exactly what you made before anything is finalized."
       },
       {
         q: "Can I set my own ticket prices?",
@@ -32,7 +32,7 @@ const faqCategories = [
       },
       {
         q: "What happens if my event doesn't sell enough tickets?",
-        a: "With the Profit Share model, we share the risk with you. With Service Fee, you're responsible for covering costs—but our calculator helps you set realistic targets. We also help with promotion strategies."
+        a: "With the Profit Share model, we share the risk with you. With Service Fee, you're responsible for covering costs, but our calculator helps you set realistic targets. We also help with promotion strategies."
       },
       {
         q: "How long does event approval take?",
@@ -53,7 +53,7 @@ const faqCategories = [
       },
       {
         q: "How do I access my tickets?",
-        a: "After purchase, you'll receive a confirmation email with your ticket details. On event day, show the email or QR code at the door."
+        a: "After purchase, you'll receive a confirmation email with your ticket details and order number. On event day, show your confirmation email at the door for entry."
       },
       {
         q: "Is my payment information secure?",
@@ -87,18 +87,18 @@ const faqCategories = [
     faqs: [
       {
         q: "What cities do you operate in?",
-        a: "We're currently focused on Seattle, with plans to expand to other cities. If you're interested in hosting events in a new city, reach out—we're always looking to grow."
+        a: "We're currently focused on Seattle, with plans to expand to other cities. If you're interested in hosting events in a new city, reach out. We're always looking to grow."
       },
       {
         q: "Do I need a liquor license to host an event?",
-        a: "No. Clubless Collective operates under existing licenses and handles the legal requirements. You focus on creating the experience; we handle the paperwork."
+        a: "No. Clubless operates under existing licenses and handles the legal requirements. You focus on creating the experience; we handle the paperwork."
       },
       {
         q: "How do I contact support?",
         a: "Email us at andrew@clublesscollective.com. We typically respond within 24 hours. For logged-in users, you can also reply directly to any email we send you."
       },
       {
-        q: "Is Clubless Collective available for private events?",
+        q: "Is Clubless available for private events?",
         a: "Yes! Our platform supports both public ticketed events and private events. Contact us to discuss your specific needs."
       }
     ]
@@ -123,7 +123,7 @@ export default function FAQ() {
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
               Everything you need to know about hosting events, buying tickets, 
-              and working with Clubless Collective.
+              and working with Clubless.
             </p>
           </div>
         </div>

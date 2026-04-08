@@ -82,7 +82,7 @@ export function ComingSoonEvents({ city = "Seattle" }: ComingSoonEventsProps) {
 
       {/* Disclaimer */}
       <p className="mt-10 text-xs text-muted-foreground max-w-md mx-auto">
-        Clubless Collective is currently in early access. Events will appear here once approved and published by our team.
+        Clubless is currently in early access. Events will appear here once approved and published by our team.
       </p>
     </div>
   );

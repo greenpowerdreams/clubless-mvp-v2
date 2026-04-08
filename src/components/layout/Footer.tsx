@@ -1,18 +1,18 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
-import { Instagram, Twitter, Mail, ArrowUpRight } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { Instagram, Twitter, Mail } from "lucide-react";
 
 const footerLinks = {
   platform: [
     { name: "Browse Events", path: "/events" },
     { name: "Vendor Marketplace", path: "/vendors" },
+    { name: "Bar Service", path: "/bar-service" },
     { name: "How It Works", path: "/how-it-works" },
     { name: "Profit Calculator", path: "/calculator" },
   ],
   creators: [
     { name: "Become a Host", path: "/submit" },
-    { name: "Host Portal", path: "/portal" },
+    { name: "Creator Dashboard", path: "/dashboard" },
     { name: "Check Status", path: "/status" },
   ],
 };
@@ -26,14 +26,10 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
             {/* Brand */}
             <div className="col-span-2">
               <Link to="/" className="inline-flex items-center gap-2 mb-5">
-                <img 
-                  src={logo} 
-                  alt="Clubless Collective" 
-                  className="h-10 w-auto"
-                />
+                <span className="text-white font-bold text-2xl tracking-tight">clubless</span>
               </Link>
               <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-6">
-                Empowering creators to own their events. We handle the logistics—you keep the profits.
+                Built for creators who run their own nights.
               </p>
               <div className="flex gap-2">
                 <a
@@ -66,7 +62,7 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
 
             {/* Platform Links */}
             <div>
-              <h4 className="font-semibold text-foreground text-sm mb-4 uppercase tracking-wide">
+              <h4 className="font-semibold text-foreground text-sm mb-4">
                 Platform
               </h4>
               <ul className="space-y-3">
@@ -85,7 +81,7 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
 
             {/* Creator Links */}
             <div>
-              <h4 className="font-semibold text-foreground text-sm mb-4 uppercase tracking-wide">
+              <h4 className="font-semibold text-foreground text-sm mb-4">
                 For Creators
               </h4>
               <ul className="space-y-3">
@@ -111,18 +107,18 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
               <span className="hidden md:inline">Seattle, WA</span>
             </div>
             <div className="flex items-center gap-6">
-              <a
-                href="#"
+              <Link
+                to="/faq"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Privacy
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to="/faq"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Terms
-              </a>
+              </Link>
             </div>
           </div>
         </div>

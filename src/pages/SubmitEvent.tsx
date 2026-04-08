@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Calendar, MapPin, CheckCircle2, Instagram, Mail, AlertCircle, Lock, Sparkles } from "lucide-react";
+import { Send, Calendar, MapPin, CheckCircle2, Instagram, AlertCircle, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { eventSubmissionSchema } from "@/lib/validations";
 import { User } from "@supabase/supabase-js";
+import { EVENT_TYPES, type EventTypeId } from "@/lib/eventTypes";
 
 interface FormData {
   name: string;
@@ -33,6 +34,7 @@ interface FormData {
   event_concept: string;
   preferred_date: string;
   fee_model: string;
+  event_type: EventTypeId;
 }
 
 interface ProfitSummary {
@@ -49,9 +51,12 @@ interface FormErrors {
   [key: string]: string;
 }
 
+const VALID_EVENT_TYPES: EventTypeId[] = ["nightlife", "wedding", "corporate", "birthday", "other"];
+
 export default function SubmitEvent() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -61,7 +66,13 @@ export default function SubmitEvent() {
   const [proposalId, setProposalId] = useState<string | null>(null);
   const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
-  
+
+  const typeFromUrl = searchParams.get("type");
+  const initialEventType: EventTypeId =
+    typeFromUrl && VALID_EVENT_TYPES.includes(typeFromUrl as EventTypeId)
+      ? (typeFromUrl as EventTypeId)
+      : "nightlife";
+
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -70,6 +81,7 @@ export default function SubmitEvent() {
     event_concept: "",
     preferred_date: "",
     fee_model: "service-fee",
+    event_type: initialEventType,
   });
 
   // Check auth state
@@ -181,6 +193,7 @@ export default function SubmitEvent() {
           event_concept: formData.event_concept.trim(),
           preferred_event_date: formData.preferred_date,
           fee_model: formData.fee_model,
+          event_type: formData.event_type,
           full_calculator_json: profitSummary || null,
           projected_revenue: profitSummary?.totalRevenue || null,
           projected_costs: profitSummary?.totalCosts || null,
@@ -266,57 +279,40 @@ export default function SubmitEvent() {
               <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-8">
                 <CheckCircle2 className="w-10 h-10 text-green-500" />
               </div>
-              
+
               <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
                 Proposal <span className="text-primary">Submitted!</span>
               </h1>
-              
-              <p className="text-lg text-muted-foreground mb-8">
-                Thank you for your interest in hosting an event with Clubless Collective.
+
+              <p className="text-lg text-muted-foreground mb-10">
+                We'll review your proposal and be in touch within 48 hours.
               </p>
 
-              <div className="glass rounded-2xl p-6 mb-8 border border-primary/20">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <Sparkles className="w-6 h-6 text-primary" />
-                  <h2 className="font-display text-xl font-semibold">View Your Dashboard</h2>
-                </div>
-                <p className="text-muted-foreground mb-4">
-                  Track your proposal status and manage your events in your Host Portal.
-                </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button variant="default" size="lg" asChild>
-                  {proposalId ? (
-                    <Link to={`/portal/events/${proposalId}`}>View Proposal</Link>
-                  ) : (
-                    <Link to="/portal">Go to Dashboard</Link>
-                  )}
+                  <Link to="/dashboard">Track your proposal →</Link>
                 </Button>
+                <button
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    setProposalId(null);
+                    setProfitSummary(null);
+                    setFormData({
+                      name: user?.user_metadata?.full_name || "",
+                      email: user?.email || "",
+                      instagram_handle: "",
+                      city: "",
+                      event_concept: "",
+                      preferred_date: "",
+                      fee_model: "service-fee",
+                      event_type: initialEventType,
+                    });
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+                >
+                  Submit another event
+                </button>
               </div>
-
-              <div className="glass rounded-2xl p-8 text-left mb-8">
-                <h2 className="font-display text-xl font-semibold mb-4">What Happens Next?</h2>
-                <ol className="space-y-4 text-muted-foreground">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">1</span>
-                    <span><strong className="text-foreground">Review (24-48 hours):</strong> Our team will review your event concept and profit projections.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">2</span>
-                    <span><strong className="text-foreground">Discovery Call:</strong> If your event is a good fit, we'll schedule a call to discuss details.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">3</span>
-                    <span><strong className="text-foreground">Planning:</strong> We'll work together on venue selection, marketing, and logistics.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-semibold flex items-center justify-center">4</span>
-                    <span><strong className="text-foreground">Launch:</strong> Your event goes live and you start making money!</span>
-                  </li>
-                </ol>
-              </div>
-
-              <Button variant="outline" size="lg" asChild>
-                <Link to="/">Return to Home</Link>
-              </Button>
             </div>
           </div>
         </section>
@@ -369,29 +365,6 @@ export default function SubmitEvent() {
                 you within 48 hours with next steps.
               </p>
               
-              {!user && (
-                <div className="mt-6 p-4 rounded-xl bg-secondary/50 border border-border inline-flex items-center gap-3">
-                  <Lock className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    You'll need to{" "}
-                    <button 
-                      onClick={() => handleAuthRedirect("signup")}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      create an account
-                    </button>
-                    {" "}or{" "}
-                    <button 
-                      onClick={() => handleAuthRedirect("login")}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      sign in
-                    </button>
-                    {" "}to submit.
-                  </span>
-                </div>
-              )}
-              
               {user && (
                 <div className="mt-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 inline-flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
@@ -403,8 +376,40 @@ export default function SubmitEvent() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Event Type Picker */}
+              <div className="glass rounded-2xl p-8">
+                <h2 className="font-display text-xl font-semibold mb-2">What kind of event?</h2>
+                <p className="text-sm text-muted-foreground mb-6">Pick the type that best fits your idea.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {EVENT_TYPES.map((type) => {
+                    const Icon = type.Icon;
+                    const isSelected = formData.event_type === type.id;
+                    return (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, event_type: type.id as EventTypeId }))}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all duration-200 ${
+                          isSelected
+                            ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                            : "border-border bg-secondary/40 hover:border-primary/40"
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isSelected ? "bg-primary/20" : "bg-muted"}`}>
+                          <Icon className={`w-5 h-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <span className={`text-xs font-semibold leading-tight ${isSelected ? "text-primary" : "text-foreground"}`}>
+                          {type.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground leading-tight hidden sm:block">{type.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Calculator Summary */}
-              {profitSummary && (
+              {profitSummary && formData.event_type === "nightlife" && (
                 <div className="relative rounded-2xl overflow-hidden">
                   <div className="absolute inset-0 bg-primary opacity-90" />
                   <div className="relative z-10 p-6 md:p-8">
@@ -428,6 +433,30 @@ export default function SubmitEvent() {
                     <p className="text-sm opacity-70 mt-4">
                       Fee Model: {profitSummary.feeModel === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)"}
                     </p>
+                  </div>
+                </div>
+              )}
+              {profitSummary && formData.event_type !== "nightlife" && (
+                <div className="relative rounded-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-primary opacity-90" />
+                  <div className="relative z-10 p-6 md:p-8">
+                    <h2 className="font-display text-xl font-semibold mb-4 text-primary-foreground">
+                      Budget Summary
+                    </h2>
+                    <div className="grid sm:grid-cols-3 gap-4 text-primary-foreground">
+                      <div>
+                        <p className="text-sm opacity-70">Expected Attendance</p>
+                        <p className="text-2xl font-bold">{profitSummary.attendance}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-70">Estimated Costs</p>
+                        <p className="text-2xl font-bold">{formatCurrency(profitSummary.totalCosts)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-70">Net Budget</p>
+                        <p className="text-2xl font-bold">{formatCurrency(profitSummary.netProfit)}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -521,6 +550,7 @@ export default function SubmitEvent() {
                       />
                       {renderError("preferred_date")}
                     </div>
+                    {formData.event_type === "nightlife" && (
                     <div className="space-y-2">
                       <Label>Fee Model *</Label>
                       <Select
@@ -537,6 +567,7 @@ export default function SubmitEvent() {
                       </Select>
                       {renderError("fee_model")}
                     </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -548,7 +579,7 @@ export default function SubmitEvent() {
                       name="event_concept"
                       value={formData.event_concept}
                       onChange={handleChange}
-                      placeholder="Tell us about your event concept, the vibe you're going for, your target audience, expected attendance, and any special requirements..."
+                      placeholder="e.g. A nightlife event for ~200 guests on a Friday night in Capitol Hill. Looking for a DJ, bartender, and security..."
                       className={`bg-secondary/50 min-h-[150px] ${errors.event_concept ? "border-destructive" : ""}`}
                     />
                     {renderError("event_concept")}

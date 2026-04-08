@@ -33,6 +33,7 @@ export const eventSubmissionSchema = z.object({
   fee_model: z.enum(["service-fee", "profit-share"], {
     errorMap: () => ({ message: "Please select a fee model" }),
   }),
+  event_type: z.enum(["nightlife", "wedding", "corporate", "birthday", "other"]).default("nightlife"),
 });
 
 export type EventSubmissionData = z.infer<typeof eventSubmissionSchema>;

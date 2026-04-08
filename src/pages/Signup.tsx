@@ -26,7 +26,7 @@ export default function Signup() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Get redirect destination from state (e.g., from submit page)
-  const redirectTo = location.state?.redirectTo || "/portal";
+  const redirectTo = location.state?.redirectTo || "/dashboard";
   const preservedState = location.state?.preservedState;
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function Signup() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/portal`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: name.trim(),
           },
@@ -121,7 +121,7 @@ export default function Signup() {
 
       toast({
         title: "Account created!",
-        description: "Welcome to Clubless Collective. Check your email!",
+        description: "Welcome to Clubless. Check your email!",
       });
       
       // Auth state change will handle redirect
@@ -146,11 +146,11 @@ export default function Signup() {
               <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-6">
                 <Sparkles className="w-8 h-8 text-primary-foreground" />
               </div>
-              <h1 className="font-display text-3xl font-bold mb-2">
+              <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-2">
                 Create Your <span className="text-primary">Account</span>
               </h1>
               <p className="text-muted-foreground">
-                Join Clubless Collective and start hosting events
+                Join Clubless and start hosting events
               </p>
             </div>
 

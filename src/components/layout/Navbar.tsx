@@ -1,35 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, ChevronRight, Bell, Ticket } from "lucide-react";
-import { useUnreadCount } from "@/hooks/useNotifications";
+import { Menu, X, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { NotificationBell } from "./NotificationBell";
 
-interface NavLink {
-  name: string;
-  path: string;
-  authOnly?: boolean;
-}
-
-const navLinks: NavLink[] = [
+const navLinks = [
   { name: "Events", path: "/events" },
-  { name: "For Creators", path: "/how-it-works" },
+  { name: "How It Works", path: "/how-it-works" },
+  { name: "Bar Service", path: "/bar-service" },
   { name: "Vendors", path: "/vendors" },
   { name: "Pricing", path: "/pricing" },
-  { name: "FAQ", path: "/faq" },
-  { name: "Community", path: "/community", authOnly: true },
-  { name: "My Tickets", path: "/my-tickets", authOnly: true },
+];
+
+const authLinks = [
+  { name: "Community", path: "/community" },
+  { name: "My Tickets", path: "/my-tickets" },
 ];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user } = useAuth();
   const location = useLocation();
-  const { data: unreadCount = 0 } = useUnreadCount();
-  const visibleLinks = navLinks.filter(l => !l.authOnly || isLoggedIn);
+  const isLoggedIn = !!user;
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,37 +36,37 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setIsLoggedIn(!!session);
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
       }
-    );
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const visibleLinks = isLoggedIn
+    ? [...navLinks, ...authLinks]
+    : navLinks;
 
   return (
-    <nav 
+    <nav
+      ref={navRef}
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isScrolled 
-          ? "bg-background/95 backdrop-blur-sm border-b border-border" 
+        isScrolled
+          ? "bg-background/95 backdrop-blur-sm border-b border-border"
           : "bg-transparent"
       )}
     >
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-18">
+        <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src={logo} 
-              alt="Clubless Collective" 
-              className="h-10 md:h-12 w-auto"
-            />
+            <span className="text-white font-bold text-2xl tracking-tight">
+              clubless
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -89,38 +85,15 @@ export function Navbar() {
                 {link.name}
               </Link>
             ))}
-            {isLoggedIn && (
-              <Link
-                to="/portal"
-                className={cn(
-                  "px-4 py-2 text-sm font-medium transition-colors rounded-lg flex items-center gap-1.5",
-                  location.pathname.startsWith("/portal")
-                    ? "text-foreground bg-muted"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                <User className="w-4 h-4" />
-                Portal
-              </Link>
-            )}
           </div>
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
+            {isLoggedIn && <NotificationBell />}
             {isLoggedIn ? (
-              <>
-                <Link to="/portal" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </Link>
-                <Button variant="default" size="sm" asChild>
-                  <Link to="/portal">Dashboard</Link>
-                </Button>
-              </>
+              <Button variant="default" size="sm" asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
@@ -128,13 +101,23 @@ export function Navbar() {
                 </Button>
                 <Button variant="default" size="sm" asChild>
                   <Link to="/submit">
-                    Become a Host
+                    Start an Event
                     <ChevronRight className="w-4 h-4" />
                   </Link>
                 </Button>
               </>
             )}
           </div>
+
+          {/* Mobile Primary CTA */}
+          {!isLoggedIn && (
+            <Link
+              to="/submit"
+              className="md:hidden text-primary text-sm font-medium mr-2"
+            >
+              Start an Event
+            </Link>
+          )}
 
           {/* Mobile Menu Button */}
           <button
@@ -165,25 +148,10 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              {isLoggedIn && (
-                <Link
-                  to="/portal"
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "px-4 py-3 text-base font-medium transition-colors rounded-lg flex items-center gap-2",
-                    location.pathname.startsWith("/portal")
-                      ? "text-foreground bg-muted"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
-                >
-                  <User className="w-4 h-4" />
-                  Host Portal
-                </Link>
-              )}
               <div className="pt-4 mt-2 border-t border-border flex flex-col gap-2">
                 {isLoggedIn ? (
                   <Button variant="default" asChild>
-                    <Link to="/portal" onClick={() => setIsOpen(false)}>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                       My Dashboard
                     </Link>
                   </Button>
@@ -196,7 +164,7 @@ export function Navbar() {
                     </Button>
                     <Button variant="default" asChild>
                       <Link to="/submit" onClick={() => setIsOpen(false)}>
-                        Become a Host
+                        Start an Event
                       </Link>
                     </Button>
                   </>
