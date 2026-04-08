@@ -30,6 +30,13 @@ import VendorDetail from "./pages/VendorDetail";
 import Pricing from "./pages/Pricing";
 import FAQ from "./pages/FAQ";
 import VendorApply from "./pages/VendorApply";
+import Community from "./pages/Community";
+import PublicProfile from "./pages/PublicProfile";
+import MyTickets from "./pages/MyTickets";
+import TicketVerify from "./pages/TicketVerify";
+import EventCheckin from "./pages/EventCheckin";
+import EventAnalytics from "./pages/EventAnalytics";
+import PaymentSettings from "./pages/PaymentSettings";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +73,13 @@ const App = () => (
           <Route path="/vendor/apply" element={<VendorApply />} />
           <Route path="/vendors" element={<VendorMarketplace />} />
           <Route path="/vendors/:id" element={<VendorDetail />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/u/:handle" element={<PublicProfile />} />
+          <Route path="/my-tickets" element={<MyTickets />} />
+          <Route path="/ticket/verify/:token" element={<TicketVerify />} />
+          <Route path="/events/:id/checkin" element={<EventCheckin />} />
+          <Route path="/events/:id/analytics" element={<EventAnalytics />} />
+          <Route path="/settings/payments" element={<PaymentSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
