@@ -197,9 +197,7 @@ export default function BarService() {
       setForm(EMPTY_FORM);
     } catch (err) {
       console.error("bar-service-inquiry: Unexpected error:", err);
-      // Still show confirmation — do not block the user if something goes wrong
-      setSubmitted(true);
-      setForm(EMPTY_FORM);
+      alert("Something went wrong. Please try again or email andrew@clublesscollective.com.");
     } finally {
       setSubmitting(false);
     }

@@ -1,0 +1,17 @@
+{
+  "name": "Clubless Collective",
+  "short_name": "Clubless",
+  "description": "Your Personal Event Operating System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#9945FF",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

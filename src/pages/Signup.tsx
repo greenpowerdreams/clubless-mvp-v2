@@ -221,6 +221,13 @@ export default function Signup() {
                 >
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
+
+                <p className="text-xs text-center text-muted-foreground mt-3">
+                  By signing up you agree to our{" "}
+                  <Link to="/terms" className="underline hover:text-foreground">Terms</Link>
+                  {" "}and{" "}
+                  <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
+                </p>
               </form>
             </div>
 

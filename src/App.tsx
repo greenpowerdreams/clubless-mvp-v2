@@ -38,6 +38,8 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const VendorApply = lazy(() => import("./pages/VendorApply"));
 const BarService = lazy(() => import("./pages/BarService"));
 const PortalLogin = lazy(() => import("./pages/PortalLogin"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 
 // Production: unified dashboard + profiles
 const Dashboard = lazy(() => import("./features/dashboard/Dashboard"));
@@ -54,7 +56,15 @@ const PaymentSettings = lazy(() => import("./pages/PaymentSettings"));
 const Community = lazy(() => import("./pages/Community"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function PageLoader() {
   return (
@@ -98,6 +108,8 @@ const App = () => (
               <Route path="/vendors/:id" element={<VendorDetail />} />
               <Route path="/vendor/apply" element={<VendorApply />} />
               <Route path="/bar-service" element={<BarService />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
 
               {/* Public: Phase 3 */}
               <Route path="/ticket/verify/:token" element={<TicketVerify />} />
@@ -127,7 +139,7 @@ const App = () => (
               <Route path="/checkout/cancel" element={<CheckoutCancel />} />
 
               {/* Admin */}
-              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/login" element={<AdminAuth />} />
 
               {/* Redirects: old routes → new */}

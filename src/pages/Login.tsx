@@ -19,7 +19,7 @@ export default function Login() {
   const [otpCode, setOtpCode] = useState("");
 
   // Get redirect destination from state (e.g., from submit page)
-  const redirectTo = location.state?.redirectTo || "/portal";
+  const redirectTo = location.state?.redirectTo || "/dashboard";
   const preservedState = location.state?.preservedState;
 
   useEffect(() => {

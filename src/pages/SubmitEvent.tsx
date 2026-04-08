@@ -431,7 +431,7 @@ export default function SubmitEvent() {
                       </div>
                     </div>
                     <p className="text-sm opacity-70 mt-4">
-                      Fee Model: {profitSummary.feeModel === "profit-share" ? "Profit Share (50/50)" : "Service Fee (15%)"}
+                      Fee Model: {profitSummary.feeModel === "profit-share" ? "Profit Share (50/50)" : "Service Fee (8-10%)"}
                     </p>
                   </div>
                 </div>
@@ -519,7 +519,7 @@ export default function SubmitEvent() {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      placeholder="e.g., Los Angeles, New York"
+                      placeholder="e.g., Seattle, Bellevue"
                       className={`bg-secondary/50 ${errors.city ? "border-destructive" : ""}`}
                     />
                     {renderError("city")}
@@ -561,7 +561,7 @@ export default function SubmitEvent() {
                           <SelectValue placeholder="Select fee model" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="service-fee">Service Fee (15%)</SelectItem>
+                          <SelectItem value="service-fee">Service Fee (8-10%)</SelectItem>
                           <SelectItem value="profit-share">Profit Share (50/50)</SelectItem>
                         </SelectContent>
                       </Select>

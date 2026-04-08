@@ -12,8 +12,8 @@ import {
 import { format, addDays } from "date-fns";
 
 // ─── Landing page Supabase (curated Seattle scene) ────────────────────────────
-const SB_URL = "https://sdnjbzmyayapmseipcvw.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkbmpiem15YXlhcG1zZWlwY3Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzg0MjIsImV4cCI6MjA4ODkxNDQyMn0.1MOFLVoTUX3PM-rNoIW3Kt61dwgFwbSIsMwOaZRDKQU";
+const SB_URL = import.meta.env.VITE_CURATED_SUPABASE_URL || "https://sdnjbzmyayapmseipcvw.supabase.co";
+const SB_KEY = import.meta.env.VITE_CURATED_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkbmpiem15YXlhcG1zZWlwY3Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzg0MjIsImV4cCI6MjA4ODkxNDQyMn0.1MOFLVoTUX3PM-rNoIW3Kt61dwgFwbSIsMwOaZRDKQU";
 const HDR = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 
 const TIME_RANGES = [

@@ -93,10 +93,9 @@ export default function MyTickets() {
             </div>
             <div className="mt-3">
               <Badge className={statusColor[t.status] ?? ""} variant="secondary">
-                {t.status.toUpperCase()}
+                {t.status.charAt(0).toUpperCase() + t.status.slice(1).toLowerCase()}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 font-mono">{t.qr_code.slice(0, 8)}...</p>
           </div>
         </div>
       </CardContent>

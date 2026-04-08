@@ -265,7 +265,7 @@ export default function VendorDetail() {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="text-muted-foreground">Loading vendor...</div>
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
       </Layout>
     );
