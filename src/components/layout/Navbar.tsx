@@ -1,17 +1,26 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, ChevronRight } from "lucide-react";
+import { Menu, X, User, ChevronRight, Bell, Ticket } from "lucide-react";
+import { useUnreadCount } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
-const navLinks = [
+interface NavLink {
+  name: string;
+  path: string;
+  authOnly?: boolean;
+}
+
+const navLinks: NavLink[] = [
   { name: "Events", path: "/events" },
   { name: "For Creators", path: "/how-it-works" },
   { name: "Vendors", path: "/vendors" },
   { name: "Pricing", path: "/pricing" },
   { name: "FAQ", path: "/faq" },
+  { name: "Community", path: "/community", authOnly: true },
+  { name: "My Tickets", path: "/my-tickets", authOnly: true },
 ];
 
 export function Navbar() {
@@ -19,6 +28,8 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const location = useLocation();
+  const { data: unreadCount = 0 } = useUnreadCount();
+  const visibleLinks = navLinks.filter(l => !l.authOnly || isLoggedIn);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -64,7 +75,7 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {visibleLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -97,9 +108,19 @@ export function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
-              <Button variant="default" size="sm" asChild>
-                <Link to="/portal">Dashboard</Link>
-              </Button>
+              <>
+                <Link to="/portal" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+                <Button variant="default" size="sm" asChild>
+                  <Link to="/portal">Dashboard</Link>
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
@@ -129,7 +150,7 @@ export function Navbar() {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-1">
-              {navLinks.map((link) => (
+              {visibleLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
