@@ -5,10 +5,9 @@ interface TicketQRCodeProps {
   size?: number;
 }
 
-const BASE_URL = "https://clublesscollective.com/ticket/verify";
-
 export function TicketQRCode({ qrToken, size = 180 }: TicketQRCodeProps) {
-  const url = `${BASE_URL}/${qrToken}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://clublesscollective.com";
+  const url = `${origin}/ticket/verify/${qrToken}`;
   return (
     <div className="bg-white p-3 rounded-lg inline-block">
       <QRCode value={url} size={size} level="M" />
