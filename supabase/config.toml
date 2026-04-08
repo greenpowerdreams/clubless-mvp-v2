@@ -1,4 +1,4 @@
-project_id = "epzdbinxjqhjjgrhynpr"
+project_id = "sdnjbzmyayapmseipcvw"
 
 [functions.submit-proposal]
 verify_jwt = false
