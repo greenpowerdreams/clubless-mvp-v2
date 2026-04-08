@@ -23,6 +23,7 @@ interface Event {
   cover_image_url: string | null;
   theme: string | null;
   status: string;
+  featured: boolean;
   tickets: {
     price_cents: number;
     qty_total: number;
@@ -59,6 +60,7 @@ export default function Events() {
           cover_image_url,
           theme,
           status,
+          featured,
           tickets (
             price_cents,
             qty_total,
@@ -67,6 +69,7 @@ export default function Events() {
         `)
         .in("status", ["published", "live"])
         .gte("end_at", new Date().toISOString())
+        .order("featured", { ascending: false })
         .order("start_at", { ascending: true });
 
       if (error) throw error;
@@ -245,7 +248,12 @@ export default function Events() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
                         
-                        {event.status === "live" && (
+                        {event.featured && (
+                          <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground font-bold">
+                            Featured
+                          </Badge>
+                        )}
+                        {event.status === "live" && !event.featured && (
                           <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground">
                             Live Now
                           </Badge>
