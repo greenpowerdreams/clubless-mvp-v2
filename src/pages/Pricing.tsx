@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -195,6 +196,15 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 // ---------------------------------------------------------------------------
 
 export default function Pricing() {
+  useSEO({
+    title: "Pricing — 8-10% Platform Fee | Clubless Collective",
+    description:
+      "Transparent event hosting pricing. 8-10% platform fee, no monthly subscription, no surprise charges. The Posh alternative built for Seattle creators.",
+    keywords:
+      "event platform pricing, posh alternative, clubless pricing, event ticketing fees, dj platform pricing",
+    url: "/pricing",
+    type: "website",
+  });
   return (
     <Layout>
       {/* Hero */}

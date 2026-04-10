@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,11 @@ const signupSchema = z.object({
 });
 
 export default function Signup() {
+  useSEO({
+    title: "Create Your Creator Account | Clubless Collective",
+    description: "Join Clubless Collective and start hosting profitable nightlife events in Seattle.",
+    robots: "noindex,follow",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();

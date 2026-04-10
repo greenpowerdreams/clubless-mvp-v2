@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSEO } from "@/shared/hooks/useSEO";
+import { buildEventSchema } from "@/shared/lib/eventSchema";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +68,31 @@ export default function EventDetail() {
   const [ticketSelection, setTicketSelection] = useState<TicketSelection>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+
+  useSEO({
+    title: event ? `${event.title} | Clubless Collective` : "Event | Clubless Collective",
+    description: event?.description?.slice(0, 160) || "Get tickets to this Seattle event on Clubless Collective.",
+    image: event?.cover_image_url || undefined,
+    type: "event",
+  });
+
+  // Inject Event JSON-LD structured data
+  useEffect(() => {
+    if (!event) return;
+    const schema = buildEventSchema(event);
+    let scriptEl = document.getElementById("event-jsonld") as HTMLScriptElement | null;
+    if (!scriptEl) {
+      scriptEl = document.createElement("script");
+      scriptEl.id = "event-jsonld";
+      scriptEl.type = "application/ld+json";
+      document.head.appendChild(scriptEl);
+    }
+    scriptEl.textContent = JSON.stringify(schema);
+    return () => {
+      const el = document.getElementById("event-jsonld");
+      if (el) el.remove();
+    };
+  }, [event]);
 
   useEffect(() => {
     fetchEvent();

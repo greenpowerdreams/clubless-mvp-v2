@@ -12,3 +12,25 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Protected / private routes — no indexing
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /profile
+Disallow: /my-tickets
+Disallow: /settings
+Disallow: /settings/*
+Disallow: /signup
+Disallow: /login
+Disallow: /portal
+Disallow: /portal/*
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /checkout
+Disallow: /checkout/*
+Disallow: /community
+Disallow: /ticket/verify
+
+Sitemap: https://clublesscollective.com/sitemap.xml

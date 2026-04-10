@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,6 +107,13 @@ const faqCategories = [
 ];
 
 export default function FAQ() {
+  useSEO({
+    title: "Frequently Asked Questions | Clubless Collective",
+    description:
+      "Answers to common questions about Clubless Collective — event hosting, ticketing fees, mobile bar service, payouts, and more.",
+    url: "/faq",
+    type: "website",
+  });
   return (
     <Layout>
       {/* Hero */}

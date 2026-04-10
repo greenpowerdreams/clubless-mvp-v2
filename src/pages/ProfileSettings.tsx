@@ -229,10 +229,10 @@ export default function ProfileSettings() {
         <Button 
           variant="ghost" 
           className="mb-6" 
-          onClick={() => navigate("/portal")}
+          onClick={() => navigate("/dashboard")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Portal
+          Back to Dashboard
         </Button>
 
         <div className="mb-8">
@@ -431,7 +431,7 @@ export default function ProfileSettings() {
 
         {/* Save Button */}
         <div className="flex justify-end gap-4">
-          <Button variant="outline" onClick={() => navigate("/portal")}>
+          <Button variant="outline" onClick={() => navigate("/dashboard")}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1693,6 +1694,15 @@ export function CalculatorContent({ defaultModel }: { defaultModel?: string } = 
 }
 
 export default function Calculator() {
+  useSEO({
+    title: "Event Profit Calculator | Clubless Collective",
+    description:
+      "Free event profit calculator. Plan your nightlife event budget — bartenders, security, ticketing, marketing, and net profit. Built by Clubless Collective.",
+    keywords:
+      "event profit calculator, dj booking profit, event budget, nightlife profit, party profit calculator, event planning seattle",
+    url: "/calculator",
+    type: "website",
+  });
   return (
     <Layout>
       <CalculatorContent />

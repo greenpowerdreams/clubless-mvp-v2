@@ -7,11 +7,24 @@ interface UseSEOProps {
   image?: string;
   url?: string;
   type?: string;
+  canonical?: string;
+  robots?: string;
+  keywords?: string;
 }
 
-export function useSEO({ title, description, image, url, type }: UseSEOProps) {
+export function useSEO(props: UseSEOProps) {
   useEffect(() => {
-    updateSEO({ title, description, image, url, type });
+    updateSEO(props);
     return () => resetSEO();
-  }, [title, description, image, url, type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    props.title,
+    props.description,
+    props.image,
+    props.url,
+    props.type,
+    props.canonical,
+    props.robots,
+    props.keywords,
+  ]);
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,13 @@ interface FormErrors {
 const VALID_EVENT_TYPES: EventTypeId[] = ["nightlife", "wedding", "corporate", "birthday", "other"];
 
 export default function SubmitEvent() {
+  useSEO({
+    title: "Submit Your Event Idea | Clubless Collective",
+    description:
+      "Tell us about your event idea. Submit your proposal to Clubless Collective and we'll help you host a profitable nightlife event in Seattle — no venue required.",
+    url: "/submit",
+    type: "website",
+  });
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

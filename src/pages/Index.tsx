@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
@@ -42,6 +43,15 @@ const EVENT_TYPE_META: Record<
 };
 
 export default function Index() {
+  useSEO({
+    title: "Clubless Collective | Seattle Nightlife & Event Operating System",
+    description:
+      "Clubless Collective is Seattle's event operating system. Host profitable nightlife events without owning a venue. Licensed mobile bar service, ticketing, vendors, and creator tools — built for DJs, promoters, and event creators.",
+    keywords:
+      "clubless, clubless collective, seattle nightlife, seattle events, event hosting, nightlife operating system, mobile bar service seattle, dj booking seattle, posh alternative, event platform, licensed bartender seattle, venue-free events",
+    url: "/",
+    type: "website",
+  });
   return (
     <Layout>
       {/* ── Hero ── */}

@@ -1,0 +1,32 @@
+site,url,category,priority,fee,submission_url,description_char_limit,status,date_submitted,notes
+Crunchbase,https://crunchbase.com,startup-database,1,free,https://www.crunchbase.com/add-new,160,pending,,Add company + founder profile
+BuiltIn Seattle,https://builtinseattle.com,local-startup,1,free,https://builtin.com/join-us,300,pending,,Pairs with hiring page
+AngelList / Wellfound,https://wellfound.com,startup-database,1,free,https://wellfound.com/company/start,200,pending,,Founder profile too
+Product Hunt,https://producthunt.com,launch-platform,1,free,https://www.producthunt.com/posts/new,260,pending,,Use product-hunt-launch.md
+G2,https://g2.com,software-reviews,2,free,https://www.g2.com/products/new,500,pending,,Takes ~1 week for approval
+Capterra,https://capterra.com,software-directory,2,free,https://vendors.capterra.com/sign-up,500,pending,,Event ticketing category
+GetApp,https://getapp.com,software-directory,2,free,https://www.getapp.com/vendors,500,pending,,Owned by Gartner - also lists on Software Advice
+Software Advice,https://softwareadvice.com,software-directory,3,free,https://www.softwareadvice.com/vendors/,500,pending,,Same account as Capterra
+BetaList,https://betalist.com,launch-platform,2,free,https://betalist.com/submit,160,pending,,Pre-launch or early stage
+Indie Hackers,https://indiehackers.com,community,1,free,https://www.indiehackers.com/post/create,none,pending,,Launch post + product page
+Startup Seattle,https://startup.seattle.gov,local-gov,2,free,https://www.startup.seattle.gov/contact,unknown,pending,,Official city listing
+Washington Technology Industry Association,https://washingtontechnology.org,local-trade,3,paid,https://washingtontechnology.org/membership/,unknown,pending,,Worth it for local credibility
+Crunchbase Pro,https://crunchbase.com,funding,3,paid,https://www.crunchbase.com/solutions,none,pending,,Skip unless raising
+F6S,https://f6s.com,startup-community,3,free,https://www.f6s.com/startup/signup,200,pending,,International startup community
+Launching Next,https://launchingnext.com,launch-platform,3,free,https://www.launchingnext.com/submit/,300,pending,,Weekly digest
+BetaPage,https://betapage.co,launch-platform,3,free,https://betapage.co/submit-startup,300,pending,,Low traffic but free backlink
+StartupBuffer,https://startupbuffer.com,launch-platform,3,free,https://startupbuffer.com/submit,200,pending,,Free DoFollow backlink
+Startup Ranking,https://startupranking.com,startup-database,3,free,https://www.startupranking.com/register,500,pending,,SEO backlink
+Killer Startups,https://killerstartups.com,launch-platform,3,free,https://www.killerstartups.com/submit-startup,300,pending,,
+Startup Stash,https://startupstash.com,directory,3,free,https://startupstash.com/add-resource/,200,pending,,
+SaaSHub,https://saashub.com,software-directory,2,free,https://www.saashub.com/submit-software,300,pending,,Alternative-to page good for SEO
+Alternatives.to,https://alternativeto.net,software-directory,2,free,https://alternativeto.net/software/submit,500,pending,,List as alternative to Posh / Eventbrite
+SoftwareSuggest,https://softwaresuggest.com,software-directory,3,free,https://www.softwaresuggest.com/vendors/register,500,pending,,India-based but global reach
+SourceForge,https://sourceforge.net,software-directory,3,free,https://sourceforge.net/projects/,none,pending,,If we open-source components
+Ycombinator Startup School,https://startupschool.org,community,2,free,https://www.startupschool.org/join,none,pending,,Founder profile
+Startup Grind,https://startupgrind.com,community,3,free,https://www.startupgrind.com/startups/,300,pending,,Google for Startups affiliated
+Meetup.com (event listings),https://meetup.com,events,2,paid,https://www.meetup.com/create/,500,pending,,Create Clubless meetup group
+Eventbrite (competitive listing),https://eventbrite.com,events,3,free,https://www.eventbrite.com/create,500,pending,,List our own free events here for SEO
+Facebook Events,https://facebook.com,events,2,free,https://www.facebook.com/events/create,5000,pending,,Every Clubless event cross-posted
+The Dempsey Startup Competition,https://foster.uw.edu/centers/buerk-ctr-entrepreneurship/dempsey-startup-competition/,competition,1,free,https://foster.uw.edu/,unknown,pending,,UW competition - local credibility
+Seattle Angel Conference,https://seattleangelconference.org,community,3,free,https://seattleangelconference.org/contact,unknown,pending,,Only if raising

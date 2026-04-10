@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Mail, Lock, Sparkles, ArrowLeft } from "lucide-react";
 
 export default function Login() {
+  useSEO({
+    title: "Sign In | Clubless Collective",
+    description: "Sign in to your Clubless Collective creator account.",
+    robots: "noindex,follow",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();

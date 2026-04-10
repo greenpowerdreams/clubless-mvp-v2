@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,15 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function VendorMarketplace() {
+  useSEO({
+    title: "Seattle Event Vendors — DJs, Photographers, Bartenders | Clubless Collective",
+    description:
+      "Discover trusted Seattle event vendors. Book DJs, photographers, bartenders, security, and more — all vetted by Clubless Collective.",
+    keywords:
+      "seattle djs, seattle event vendors, seattle photographers, seattle bartenders, event vendors near me, dj booking seattle",
+    url: "/vendors",
+    type: "website",
+  });
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [services, setServices] = useState<VendorService[]>([]);
   const [loading, setLoading] = useState(true);

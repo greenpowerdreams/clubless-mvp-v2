@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -148,6 +150,15 @@ const FAQS = [
 ];
 
 export default function BarService() {
+  useSEO({
+    title: "Licensed Mobile Bar Service Seattle | Clubless Collective",
+    description:
+      "Washington State licensed mobile bar service for private events in Seattle. MAST-certified bartenders, full setup, and license coverage. Corporate parties, weddings, birthdays, and pop-ups.",
+    keywords:
+      "seattle bar service, mobile bar seattle, licensed bartender seattle, private event bartender, mast certified bartender, seattle wedding bartender, corporate bar service seattle",
+    url: "/bar-service",
+    type: "website",
+  });
   const [form, setForm] = useState<InquiryForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -166,6 +177,21 @@ export default function BarService() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Validation
+    if (!form.name.trim()) {
+      toast.error("Please enter your name.");
+      return;
+    }
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (form.guestCount && (!/^\d+$/.test(form.guestCount) || parseInt(form.guestCount, 10) <= 0)) {
+      toast.error("Guest count must be a positive number.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -197,7 +223,7 @@ export default function BarService() {
       setForm(EMPTY_FORM);
     } catch (err) {
       console.error("bar-service-inquiry: Unexpected error:", err);
-      alert("Something went wrong. Please try again or email andrew@clublesscollective.com.");
+      toast.error("Something went wrong. Please try again or email andrew@clublesscollective.com.");
     } finally {
       setSubmitting(false);
     }

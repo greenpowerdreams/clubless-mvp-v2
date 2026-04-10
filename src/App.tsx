@@ -9,6 +9,7 @@ import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { ScrollToTop } from "@/shared/components/ScrollToTop";
 import { InstallPrompt } from "@/shared/components/InstallPrompt";
+import { ErrorBoundary } from "@/app/ErrorBoundary";
 
 // Eager load: lightweight, always needed
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const BarService = lazy(() => import("./pages/BarService"));
 const PortalLogin = lazy(() => import("./pages/PortalLogin"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const WhatIsClubless = lazy(() => import("./pages/WhatIsClubless"));
 
 // Production: unified dashboard + profiles
 const Dashboard = lazy(() => import("./features/dashboard/Dashboard"));
@@ -89,6 +91,7 @@ const App = () => (
         <AuthProvider>
           <ScrollToTop />
           <InstallPrompt />
+          <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public */}
@@ -110,6 +113,7 @@ const App = () => (
               <Route path="/bar-service" element={<BarService />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/what-is-clubless" element={<WhatIsClubless />} />
 
               {/* Public: Phase 3 */}
               <Route path="/ticket/verify/:token" element={<TicketVerify />} />
@@ -147,12 +151,13 @@ const App = () => (
               <Route path="/portal/events/:id" element={<PortalEventRedirect />} />
               <Route path="/creator" element={<Navigate to="/dashboard?tab=events" replace />} />
 
-              {/* Phase 3: public profile (also matches /u/:handle from production) */}
-              <Route path="/u/:handle" element={<PublicProfile />} />
+              {/* Phase 3: public profile (uses /profile/:handle to avoid collision with /u/:identifier) */}
+              <Route path="/profile/:handle" element={<PublicProfile />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

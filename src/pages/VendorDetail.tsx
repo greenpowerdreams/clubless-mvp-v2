@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,15 @@ const PRICING_LABELS: Record<string, string> = {
 export default function VendorDetail() {
   const { id } = useParams<{ id: string }>();
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  useSEO({
+    title: vendor
+      ? `${vendor.business_name} | Clubless Collective Vendors`
+      : "Vendor | Clubless Collective",
+    description:
+      vendor?.description ||
+      "Book this trusted Seattle event vendor through Clubless Collective.",
+    type: "profile",
+  });
   const [services, setServices] = useState<VendorService[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

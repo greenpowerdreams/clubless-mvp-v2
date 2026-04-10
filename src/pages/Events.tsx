@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +101,15 @@ function formatPrice(cents: number | null) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Events() {
+  useSEO({
+    title: "Seattle Events This Week | Clubless Collective",
+    description:
+      "Discover the best nightlife and events happening in Seattle right now. Curated DJs, parties, art shows, and more — updated daily by Clubless Collective.",
+    keywords:
+      "seattle events, nightlife seattle, seattle djs, things to do seattle, seattle parties, seattle nightlife, clubless events",
+    url: "/events",
+    type: "website",
+  });
   // Curated feed state
   const [timeRange, setTimeRange] = useState(7);
   const [curated, setCurated] = useState<CuratedEvent[]>([]);

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
@@ -95,6 +96,15 @@ const fees = [
 
 
 export default function HowItWorks() {
+  useSEO({
+    title: "How It Works — Host Events Without a Venue | Clubless Collective",
+    description:
+      "Learn how Clubless Collective lets DJs, promoters, and creators host profitable events in Seattle without owning a venue. From idea to payout in 5 simple steps.",
+    keywords:
+      "event hosting, mobile bar, venue-free events, how to throw an event, dj event hosting seattle, clubless how it works",
+    url: "/how-it-works",
+    type: "website",
+  });
   return (
     <Layout>
       {/* Hero */}
