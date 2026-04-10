@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useSEO } from "@/shared/hooks/useSEO";
+import {
+  buildBarServiceFAQSchema,
+  buildBarServiceLocalBusinessSchema,
+  BAR_SERVICE_AREA_CITIES,
+} from "@/shared/lib/barServiceSchema";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,8 +125,16 @@ const EVENT_TYPES = [
 
 const FAQS = [
   {
+    q: "How much does a bartender cost for a wedding in Seattle?",
+    a: "Wedding bartender pricing in Seattle starts at $499 for up to 50 guests (4-hour minimum) and $950 for 50 to 150 guests (up to 6 hours) with Clubless Collective. Larger weddings are quoted custom. Pricing includes MAST-certified staff, full bar setup and teardown, and Washington State liquor license coverage. Alcohol is provided by the host.",
+  },
+  {
+    q: "How do I hire a mobile bartender in Seattle?",
+    a: "Submit an inquiry on this page with your event date, guest count, and venue. We respond within 24 hours with availability and a confirmed quote. Most events book 4 to 8 weeks in advance — popular Saturdays in summer book out faster.",
+  },
+  {
     q: "Do I need my own liquor license?",
-    a: "No. We hold the Washington State Liquor and Cannabis Board catering license. You are the private host. We handle all alcohol service compliance.",
+    a: "No. Clubless Collective holds the Washington State Liquor and Cannabis Board catering license. You are the private host. We handle all alcohol service compliance for your private event in Seattle, Bellevue, Kirkland, Redmond, and the greater Seattle metro area.",
   },
   {
     q: "Do you provide the alcohol?",
@@ -129,11 +142,15 @@ const FAQS = [
   },
   {
     q: "Are your bartenders certified?",
-    a: "Yes. All staff hold current MAST permits — Washington State Mandatory Alcohol Server Training — as required by the WSLCB. No exceptions.",
+    a: "Yes. All Clubless bartenders hold current MAST permits — Washington State Mandatory Alcohol Server Training — as required by the WSLCB. No exceptions. Every bartender is also experienced in event service: weddings, corporate parties, birthdays, and pop-ups.",
+  },
+  {
+    q: "How many bartenders do I need for my event?",
+    a: "A general rule for private events in Seattle: 1 bartender per 50 guests for beer and wine service, or 1 per 35 guests for full bar service with cocktails. We confirm staffing in your quote based on your guest count, drink menu, and event length.",
   },
   {
     q: "How far in advance do I need to book?",
-    a: "At least 4 weeks for most events. 6 to 8 weeks for summer weekends, holidays, or events over 100 guests. Popular Saturdays book out fast.",
+    a: "At least 4 weeks for most events. 6 to 8 weeks for summer weekends, holidays, or events over 100 guests. Popular Saturdays book out fast — if your date is within 2 weeks, contact us anyway and we'll do our best to accommodate.",
   },
   {
     q: "What is the minimum booking length?",
@@ -145,20 +162,46 @@ const FAQS = [
   },
   {
     q: "What areas do you serve?",
-    a: "All of Seattle and the greater Seattle metro area, including Bellevue, Kirkland, and Redmond.",
+    a: "Clubless Collective provides licensed mobile bar service across the greater Seattle metro area, including Seattle, Bellevue, Kirkland, Redmond, Tacoma, Issaquah, Renton, Everett, Lynnwood, Bothell, Mercer Island, Sammamish, Shoreline, and Kenmore. If your event is somewhere we're not listed, ask — we'll let you know.",
   },
 ];
 
 export default function BarService() {
   useSEO({
-    title: "Licensed Mobile Bar Service Seattle | Clubless Collective",
+    title: "Mobile Bartender for Hire Seattle | Licensed Bar Service | Clubless Collective",
     description:
-      "Washington State licensed mobile bar service for private events in Seattle. MAST-certified bartenders, full setup, and license coverage. Corporate parties, weddings, birthdays, and pop-ups.",
+      "Hire a licensed mobile bartender in Seattle for weddings, corporate events, birthdays, and private parties. WA State Liquor Board licensed, MAST-certified bartenders, full bar setup, transparent pricing from $499. Serving Seattle, Bellevue, Kirkland, Redmond, Tacoma and the greater Seattle area.",
     keywords:
-      "seattle bar service, mobile bar seattle, licensed bartender seattle, private event bartender, mast certified bartender, seattle wedding bartender, corporate bar service seattle",
+      "bartender for hire seattle, hire a bartender seattle, mobile bartender seattle, wedding bartender seattle, mobile bar service seattle, licensed bartender seattle, private event bartender, mast certified bartender, seattle wedding bartender, corporate bar service seattle, bartender bellevue, bartender kirkland, bartender redmond",
     url: "/bar-service",
     type: "website",
   });
+
+  // Inject FAQPage + LocalBusiness JSON-LD for rich results
+  useEffect(() => {
+    const faqSchema = buildBarServiceFAQSchema(FAQS);
+    const businessSchema = buildBarServiceLocalBusinessSchema();
+
+    const upsert = (id: string, payload: unknown) => {
+      let el = document.getElementById(id) as HTMLScriptElement | null;
+      if (!el) {
+        el = document.createElement("script");
+        el.id = id;
+        el.type = "application/ld+json";
+        document.head.appendChild(el);
+      }
+      el.textContent = JSON.stringify(payload);
+    };
+
+    upsert("bar-service-faq-jsonld", faqSchema);
+    upsert("bar-service-business-jsonld", businessSchema);
+
+    return () => {
+      document.getElementById("bar-service-faq-jsonld")?.remove();
+      document.getElementById("bar-service-business-jsonld")?.remove();
+    };
+  }, []);
+
   const [form, setForm] = useState<InquiryForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -264,13 +307,13 @@ export default function BarService() {
           </Badge>
 
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-5 leading-tight">
-            Licensed Bar Service
+            Mobile Bartender
             <br />
-            in Seattle
+            for Hire in Seattle
           </h1>
 
           <p className="text-lg md:text-xl text-white/80 mb-8 max-w-xl mx-auto">
-            We hold the Washington State liquor license. You plan the party.
+            Licensed mobile bar service for weddings, corporate events, and private parties — Seattle, Bellevue, Kirkland, and the greater Seattle area. We hold the WA State liquor license. You plan the party.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -433,6 +476,31 @@ export default function BarService() {
               ))}
             </ul>
           </div>
+        </div>
+      </section>
+
+      {/* Service Area */}
+      <section className="py-16 px-4 bg-background border-t border-border/40">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            Mobile Bar Service Across the Greater Seattle Area
+          </h2>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+            We bring our licensed mobile bar to private events anywhere in the Puget Sound region. If your event is in any of these cities — or somewhere nearby — we can serve it.
+          </p>
+          <ul className="flex flex-wrap justify-center gap-2">
+            {BAR_SERVICE_AREA_CITIES.map((city) => (
+              <li
+                key={city}
+                className="px-4 py-1.5 rounded-full border border-border bg-card text-sm font-medium"
+              >
+                {city}
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-muted-foreground mt-6">
+            Don't see your city? <button onClick={scrollToForm} className="underline hover:text-foreground">Ask us</button> — we serve the entire greater Seattle area.
+          </p>
         </div>
       </section>
 
