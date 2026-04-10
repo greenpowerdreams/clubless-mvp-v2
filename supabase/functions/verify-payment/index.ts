@@ -137,6 +137,64 @@ serve(async (req) => {
     }
     logStep("Ticket quantities updated (reserved → sold)");
 
+    // Create ticket_instances (one row per individual ticket = one QR code)
+    // Idempotent: skip if instances already exist for this order
+    const { count: existingInstanceCount } = await supabaseAdmin
+      .from("ticket_instances")
+      .select("id", { count: "exact", head: true })
+      .eq("order_id", order_id);
+
+    if ((existingInstanceCount ?? 0) === 0) {
+      const lineItems = order.line_items_json as Array<{
+        ticket_id: string;
+        quantity: number;
+      }>;
+
+      const instanceRows: Array<{
+        order_id: string;
+        event_id: string;
+        tier_id: string;
+        holder_id: string | null;
+        holder_email: string;
+        holder_name: string | null;
+      }> = [];
+
+      for (const item of lineItems) {
+        for (let i = 0; i < item.quantity; i++) {
+          instanceRows.push({
+            order_id: order.id,
+            event_id: order.event_id,
+            tier_id: item.ticket_id,
+            holder_id: order.buyer_user_id ?? null,
+            holder_email: order.buyer_email,
+            holder_name: order.buyer_name ?? null,
+          });
+        }
+      }
+
+      if (instanceRows.length > 0) {
+        const { error: instanceError } = await supabaseAdmin
+          .from("ticket_instances")
+          .insert(instanceRows);
+
+        if (instanceError) {
+          // Don't fail the whole verification — payment is already settled.
+          // Log loudly so the webhook safety net (B3c) can retry.
+          logStep("ERROR: Failed to create ticket_instances", {
+            error: instanceError.message,
+            orderId: order.id,
+            attempted: instanceRows.length,
+          });
+        } else {
+          logStep("Ticket instances created", { count: instanceRows.length });
+        }
+      }
+    } else {
+      logStep("Ticket instances already exist (idempotent skip)", {
+        existingCount: existingInstanceCount,
+      });
+    }
+
     // Calculate platform fee and creator amount
     const platformFeePercent = 10; // 10% platform fee
     const platformFeeCents = Math.round(order.amount_cents * (platformFeePercent / 100));

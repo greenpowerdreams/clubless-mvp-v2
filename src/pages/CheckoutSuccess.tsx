@@ -148,7 +148,7 @@ export default function CheckoutSuccess() {
               <p className="text-muted-foreground mb-6">{error}</p>
               <div className="space-y-2">
                 <Button asChild className="w-full">
-                  <Link to="/dashboard">Go to My Events</Link>
+                  <Link to="/my-tickets">Go to My Tickets</Link>
                 </Button>
                 <Button variant="outline" asChild className="w-full">
                   <Link to="/">Return Home</Link>
@@ -171,7 +171,8 @@ export default function CheckoutSuccess() {
             </div>
             <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
             <p className="text-muted-foreground">
-              Your tickets have been confirmed. Check your email for details.
+              Your tickets are ready. View your QR codes in My Tickets — you'll
+              also get a confirmation email.
             </p>
           </div>
 
@@ -244,10 +245,10 @@ export default function CheckoutSuccess() {
 
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg">
-              <Link to="/dashboard">View My Events</Link>
+              <Link to="/my-tickets">View My Tickets</Link>
             </Button>
             <Button variant="outline" asChild size="lg">
-              <Link to="/">Discover More Events</Link>
+              <Link to="/events">Discover More Events</Link>
             </Button>
           </div>
         </div>
