@@ -42,6 +42,7 @@ const PortalLogin = lazy(() => import("./pages/PortalLogin"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const WhatIsClubless = lazy(() => import("./pages/WhatIsClubless"));
+const CreateEvent = lazy(() => import("./pages/CreateEvent"));
 
 // Production: unified dashboard + profiles
 const Dashboard = lazy(() => import("./features/dashboard/Dashboard"));
@@ -127,6 +128,7 @@ const App = () => (
 
               {/* Protected: Dashboard */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/events/new" element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
               <Route path="/dashboard/proposals/:id" element={<ProtectedRoute><PortalEventDetail /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
               <Route path="/vendor/dashboard" element={<ProtectedRoute><VendorDashboard /></ProtectedRoute>} />

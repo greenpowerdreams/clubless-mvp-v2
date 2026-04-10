@@ -71,7 +71,7 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
             Create your first event to start selling tickets
           </p>
           <Button variant="default" asChild>
-            <Link to="/submit">Create Event</Link>
+            <Link to="/dashboard/events/new">Create Event</Link>
           </Button>
         </CardContent>
       </Card>
@@ -85,7 +85,7 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">Your Events</h2>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/submit">
+            <Link to="/dashboard/events/new">
               <Plus className="w-4 h-4 mr-1" />
               New
             </Link>
