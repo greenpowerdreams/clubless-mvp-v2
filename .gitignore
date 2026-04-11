@@ -33,3 +33,4 @@ dist-ssr
 
 # Supabase temp
 supabase/.temp/
+.recovery/
