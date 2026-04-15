@@ -765,12 +765,12 @@ export default function CreateEvent() {
                   />
                   {coverImageUrl ? (
                     <div className="space-y-3">
-                      <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
+                      <div className="rounded-lg overflow-hidden bg-secondary flex items-center justify-center">
                         {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
                         <img
                           src={coverImageUrl}
                           alt="Event cover"
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto max-h-[520px] object-contain"
                         />
                       </div>
                       <Button
@@ -818,8 +818,8 @@ export default function CreateEvent() {
                     </p>
                   </div>
                   {coverImageUrl && (
-                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary">
-                      <img src={coverImageUrl} alt="" className="w-full h-full object-cover" />
+                    <div className="rounded-lg overflow-hidden bg-secondary flex items-center justify-center">
+                      <img src={coverImageUrl} alt="" className="w-full h-auto max-h-[420px] object-contain" />
                     </div>
                   )}
                   <div className="space-y-3">
