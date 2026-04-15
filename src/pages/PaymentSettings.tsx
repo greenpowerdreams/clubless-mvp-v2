@@ -25,10 +25,25 @@ export default function PaymentSettings() {
 
   useEffect(() => {
     if (searchParams.get("onboarding") === "complete") {
-      toast({ title: "Stripe account connected!" });
-      loadProfile();
+      syncAfterReturn();
     }
   }, [searchParams]);
+
+  const syncAfterReturn = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    // Invoke the function to retrieve fresh status from Stripe and sync to profiles.
+    // We ignore the returned URL — the user is already back from Stripe.
+    await supabase.functions.invoke("stripe-connect-onboard", {
+      body: {
+        return_url: `${window.location.origin}/settings/payments?onboarding=complete`,
+        refresh_url: `${window.location.origin}/settings/payments`,
+      },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    toast({ title: "Stripe account connected!" });
+    loadProfile();
+  };
 
   const loadProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();

@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getPlatformFeePercent } from "../_shared/platform-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -131,9 +132,11 @@ async function finalizeOrder(
     }
   }
 
-  // Calc fees
-  const platformFeeCents = Math.round(order.amount_cents * 0.1); // 10% hardcoded — see TODO
+  // Calc fees from platform_config
+  const platformFeePercent = await getPlatformFeePercent(supabaseAdmin);
+  const platformFeeCents = Math.round(order.amount_cents * (platformFeePercent / 100));
   const creatorAmountCents = order.amount_cents - platformFeeCents;
+  log("Platform fee resolved", { platformFeePercent });
   await supabaseAdmin
     .from("orders")
     .update({ platform_fee_cents: platformFeeCents, creator_amount_cents: creatorAmountCents })
