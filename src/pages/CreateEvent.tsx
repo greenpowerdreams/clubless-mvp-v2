@@ -202,11 +202,11 @@ export default function CreateEvent() {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
-        .from("event-images")
+        .from("events")
         .upload(path, file, { upsert: false, contentType: file.type });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage
-        .from("event-images")
+        .from("events")
         .getPublicUrl(path);
       setCoverImageUrl(publicUrl);
       toast.success("Cover image uploaded");
@@ -255,7 +255,7 @@ export default function CreateEvent() {
         event_date: startIso.split("T")[0],
         capacity: totalCapacity,
         max_attendees: totalCapacity,
-        status: publish ? "published" : "draft",
+        status: publish ? "pending_approval" : "draft",
         cover_image_url: coverImageUrl || null,
         image_url: coverImageUrl || null,
         slug,
@@ -304,7 +304,7 @@ export default function CreateEvent() {
         toast.error(`Event created but tickets failed: ${ticketsError.message}`);
         // Still navigate so user can edit
       } else {
-        toast.success(publish ? "Event published! 🎉" : "Draft saved");
+        toast.success(publish ? "Submitted for Clubless review" : "Draft saved");
       }
 
       navigate(`/dashboard?tab=events`);
@@ -703,7 +703,9 @@ export default function CreateEvent() {
                   <div>
                     <h3 className="font-semibold mb-2">Review your event</h3>
                     <p className="text-xs text-muted-foreground">
-                      Check everything looks right. You can save as a draft and edit later, or publish to go live immediately.
+                      Clubless reviews new events before they go live, usually within 24 hours.
+                      You'll get an email when yours is approved. Save as a draft if you're not
+                      ready to submit.
                     </p>
                   </div>
                   {coverImageUrl && (
@@ -790,7 +792,7 @@ export default function CreateEvent() {
                 </Button>
                 <Button onClick={() => submit(true)} disabled={submitting}>
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Publish event
+                  Submit for review
                 </Button>
               </div>
             )}
