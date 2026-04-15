@@ -1,6 +1,7 @@
 import { useState, useRef, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
+import { format } from "date-fns";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarComp } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { useSEO } from "@/shared/hooks/useSEO";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,23 +73,124 @@ const tierSchema = z.object({
 // Helpers
 // ────────────────────────────────────────────────────────────────────
 
-function slugify(text: string): string {
-  const base = text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 60);
-  const suffix = Math.random().toString(36).slice(2, 8);
-  return `${base}-${suffix}`;
-}
-
 interface TicketTier {
   name: string;
   priceUsd: string;
   qty: string;
   description: string;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// DateTimeField — Shadcn Calendar + hour/minute selects in a Popover.
+// Stores `value` as "YYYY-MM-DDTHH:mm" (local time, no timezone suffix —
+// same shape as a native <input type="datetime-local"> so the rest of
+// the wizard's date math keeps working unchanged).
+// ────────────────────────────────────────────────────────────────────
+
+function parseLocalDateTime(value: string): { date: Date | undefined; hour: string; minute: string } {
+  if (!value) return { date: undefined, hour: "20", minute: "00" };
+  // value format: "2026-05-01T20:00"
+  const [datePart, timePart = "20:00"] = value.split("T");
+  const [y, m, d] = datePart.split("-").map((n) => parseInt(n, 10));
+  const [h, min] = timePart.split(":");
+  return {
+    date: y && m && d ? new Date(y, m - 1, d) : undefined,
+    hour: h ?? "20",
+    minute: min ?? "00",
+  };
+}
+
+function buildLocalDateTime(date: Date | undefined, hour: string, minute: string): string {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+}
+
+function DateTimeField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const parsed = parseLocalDateTime(value);
+  const [open, setOpen] = useState(false);
+
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const minutes = ["00", "15", "30", "45"];
+
+  const display = parsed.date
+    ? `${format(parsed.date, "EEE, MMM d, yyyy")} · ${parsed.hour}:${parsed.minute}`
+    : "Pick a date & time";
+
+  const setDate = (d: Date | undefined) => {
+    onChange(buildLocalDateTime(d, parsed.hour, parsed.minute));
+  };
+  const setHour = (h: string) => {
+    onChange(buildLocalDateTime(parsed.date, h, parsed.minute));
+  };
+  const setMinute = (m: string) => {
+    onChange(buildLocalDateTime(parsed.date, parsed.hour, m));
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          className={cn(
+            "mt-1 w-full justify-start text-left font-normal",
+            !parsed.date && "text-muted-foreground",
+          )}
+        >
+          <Calendar className="mr-2 h-4 w-4" />
+          {display}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 bg-popover" align="start">
+        <CalendarComp
+          mode="single"
+          selected={parsed.date}
+          onSelect={setDate}
+          initialFocus
+        />
+        <div className="flex items-center gap-2 p-3 border-t border-border">
+          <span className="text-xs text-muted-foreground">Time</span>
+          <Select value={parsed.hour} onValueChange={setHour}>
+            <SelectTrigger className="w-[72px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-64">
+              {hours.map((h) => (
+                <SelectItem key={h} value={h}>
+                  {h}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground">:</span>
+          <Select value={parsed.minute} onValueChange={setMinute}>
+            <SelectTrigger className="w-[72px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {minutes.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 const STEPS = [
@@ -201,18 +313,26 @@ export default function CreateEvent() {
     try {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
+      console.log("[CreateEvent] Uploading to bucket=events path=", path);
+      const { data, error: uploadError } = await supabase.storage
         .from("events")
         .upload(path, file, { upsert: false, contentType: file.type });
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage
-        .from("events")
-        .getPublicUrl(path);
-      setCoverImageUrl(publicUrl);
+      if (uploadError) {
+        console.error("[CreateEvent] Storage upload error (raw):", uploadError);
+        throw uploadError;
+      }
+      console.log("[CreateEvent] Upload ok:", data);
+      const { data: publicData } = supabase.storage.from("events").getPublicUrl(path);
+      setCoverImageUrl(publicData.publicUrl);
       toast.success("Cover image uploaded");
     } catch (err) {
-      console.error("Upload error:", err);
-      toast.error(err instanceof Error ? err.message : "Upload failed");
+      // Surface the real error so we can diagnose. Supabase storage errors
+      // come back as { message, statusCode, error } so pull every field we can.
+      console.error("[CreateEvent] Upload failed:", err);
+      const anyErr = err as { message?: string; statusCode?: string | number; error?: string };
+      const detail = anyErr?.message || anyErr?.error || "Upload failed";
+      const code = anyErr?.statusCode ? ` (${anyErr.statusCode})` : "";
+      toast.error(`${detail}${code}`);
     } finally {
       setUploading(false);
     }
@@ -234,7 +354,6 @@ export default function CreateEvent() {
     }
     setSubmitting(true);
     try {
-      const slug = slugify(title);
       const totalCapacity = parseInt(capacity, 10);
       const startIso = new Date(startAt).toISOString();
       const endIso = new Date(endAt).toISOString();
@@ -242,8 +361,12 @@ export default function CreateEvent() {
       // Insert event. Write to BOTH new and legacy column names where they exist
       // (schema-alignment migration left both sets in place; sync trigger handles
       // some but not all). Belt-and-suspenders approach.
+      //
+      // `source` is NOT NULL on prod (scraper vs platform discriminator) — every
+      // self-serve event is 'platform'.
       const eventPayload: Record<string, unknown> = {
         creator_id: user.id,
+        source: "platform",
         title,
         name: title,
         description: description || null,
@@ -258,8 +381,6 @@ export default function CreateEvent() {
         status: publish ? "pending_approval" : "draft",
         cover_image_url: coverImageUrl || null,
         image_url: coverImageUrl || null,
-        slug,
-        is_private: false,
       };
 
       const { data: eventData, error: eventError } = await supabase
@@ -493,24 +614,12 @@ export default function CreateEvent() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="start_at">Start *</Label>
-                      <Input
-                        id="start_at"
-                        type="datetime-local"
-                        value={startAt}
-                        onChange={(e) => setStartAt(e.target.value)}
-                        className="mt-1"
-                      />
+                      <DateTimeField id="start_at" value={startAt} onChange={setStartAt} />
                       {renderError("start_at")}
                     </div>
                     <div>
                       <Label htmlFor="end_at">End *</Label>
-                      <Input
-                        id="end_at"
-                        type="datetime-local"
-                        value={endAt}
-                        onChange={(e) => setEndAt(e.target.value)}
-                        className="mt-1"
-                      />
+                      <DateTimeField id="end_at" value={endAt} onChange={setEndAt} />
                       {renderError("end_at")}
                     </div>
                   </div>
