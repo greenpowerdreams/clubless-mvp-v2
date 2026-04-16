@@ -407,8 +407,12 @@ export default function Discover() {
       });
     }
 
-    // Sort by date
-    unified.sort((a, b) => a.date.localeCompare(b.date));
+    // Sort: featured first, then by date
+    unified.sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return a.date.localeCompare(b.date);
+    });
 
     return unified;
   }, [curatedEvents, platformEvents]);
@@ -911,7 +915,7 @@ function EventCard({ event }: { event: UnifiedEvent }) {
       {...(cardProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
       className="group block"
     >
-      <div className="rounded-xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 h-full flex flex-col">
+      <div className={`rounded-xl overflow-hidden bg-card border transition-all hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 h-full flex flex-col ${event.featured ? "border-primary/30 ring-1 ring-primary/20" : "border-border hover:border-primary/30"}`}>
         {event.imageUrl && (
           <div className="aspect-[16/10] relative overflow-hidden bg-muted">
             <img
@@ -925,11 +929,8 @@ function EventCard({ event }: { event: UnifiedEvent }) {
             />
             {event.featured && (
               <div className="absolute top-3 left-3">
-                <Badge
-                  variant="secondary"
-                  className="bg-accent/20 text-accent border-0 text-xs"
-                >
-                  <Star className="w-3 h-3 mr-1 fill-accent" />
+                <Badge className="bg-primary/90 text-primary-foreground backdrop-blur-sm text-xs">
+                  <Sparkles className="w-3 h-3 mr-1" />
                   Featured
                 </Badge>
               </div>

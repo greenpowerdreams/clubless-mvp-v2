@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSEO } from "@/shared/hooks/useSEO";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import {
   ArrowRight,
@@ -12,9 +14,32 @@ import {
   Zap,
   Beer,
   Shield,
+  Calendar,
+  MapPin,
+  Ticket,
+  Sparkles,
 } from "lucide-react";
 import { IMAGES, VENDOR_CATEGORIES_WITH_IMAGES } from "@/lib/images";
 import { EVENT_TYPES } from "@/lib/eventTypes";
+import { format, parseISO } from "date-fns";
+
+// Curated Supabase (same source as Events.tsx)
+const SB_URL = import.meta.env.VITE_CURATED_SUPABASE_URL || "https://sdnjbzmyayapmseipcvw.supabase.co";
+const SB_KEY = import.meta.env.VITE_CURATED_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkbmpiem15YXlhcG1zZWlwY3Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzg0MjIsImV4cCI6MjA4ODkxNDQyMn0.1MOFLVoTUX3PM-rNoIW3Kt61dwgFwbSIsMwOaZRDKQU";
+const HDR = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+
+interface FeaturedEvent {
+  name: string;
+  venue: string;
+  neighborhood: string;
+  event_date: string;
+  event_time: string;
+  genre: string;
+  image_url: string;
+  ticket_url: string;
+  source_url: string;
+  price: string | null;
+}
 
 const EVENT_TYPE_META: Record<
   string,
@@ -42,6 +67,26 @@ const EVENT_TYPE_META: Record<
   },
 };
 
+function useFeaturedEvents() {
+  const [events, setEvents] = useState<FeaturedEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const fields = "name,venue,neighborhood,event_date,event_time,genre,image_url,ticket_url,source_url,price";
+    fetch(
+      `${SB_URL}/rest/v1/events?featured=eq.true&event_date=gte.${today}&image_url=neq.&order=event_date.asc&limit=4&select=${fields}`,
+      { headers: HDR }
+    )
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setEvents(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { events, loading };
+}
+
 export default function Index() {
   useSEO({
     title: "Clubless Collective | Seattle Nightlife & Event Operating System",
@@ -52,6 +97,9 @@ export default function Index() {
     url: "/",
     type: "website",
   });
+
+  const { events: featuredEvents, loading: featuredLoading } = useFeaturedEvents();
+
   return (
     <Layout>
       {/* ── Hero ── */}
@@ -150,6 +198,126 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      {/* ── Featured Events ── */}
+      {!featuredLoading && featuredEvents.length > 0 && (
+        <section className="py-16 md:py-24 bg-gradient-to-b from-background to-card">
+          <div className="container px-4">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">
+                    Featured
+                  </span>
+                </div>
+                <h2 className="font-display text-3xl md:text-4xl font-bold">
+                  Upcoming Events
+                </h2>
+              </div>
+              <Button variant="ghost" asChild className="hidden sm:flex">
+                <Link to="/discover">
+                  See all events <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className={`grid gap-6 ${featuredEvents.length === 1 ? "grid-cols-1 max-w-2xl mx-auto" : "grid-cols-1 md:grid-cols-2"}`}>
+              {featuredEvents.map((event, i) => {
+                const link = event.ticket_url || event.source_url || "/events";
+                const isExternal = link.startsWith("http");
+                const dateStr = event.event_date
+                  ? format(parseISO(event.event_date), "EEE, MMM d")
+                  : null;
+
+                return (
+                  <a
+                    key={i}
+                    href={isExternal ? link : undefined}
+                    target={isExternal ? "_blank" : undefined}
+                    rel={isExternal ? "noopener noreferrer" : undefined}
+                    className="group relative rounded-2xl overflow-hidden border border-border hover:border-primary/40 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card"
+                  >
+                    {/* Flyer image */}
+                    <div className="aspect-[16/10] relative overflow-hidden">
+                      <img
+                        src={event.image_url}
+                        alt={event.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                      {/* Featured badge */}
+                      <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur-sm">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Featured
+                      </Badge>
+
+                      {/* Genre badge */}
+                      {event.genre && (
+                        <Badge variant="secondary" className="absolute top-4 right-4 backdrop-blur-sm bg-background/60">
+                          {event.genre}
+                        </Badge>
+                      )}
+
+                      {/* Event info overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-5">
+                        <h3 className="font-display text-xl md:text-2xl font-bold text-white mb-2 line-clamp-2">
+                          {event.name}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-white/80">
+                          {dateStr && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {dateStr}
+                            </span>
+                          )}
+                          {event.event_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {event.event_time}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom details bar */}
+                    <div className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        {event.venue && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4 text-primary" />
+                            {event.venue}
+                          </span>
+                        )}
+                        {event.price && (
+                          <span className="flex items-center gap-1">
+                            <Ticket className="w-4 h-4 text-primary" />
+                            {event.price}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-primary text-sm font-medium group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                        Get Tickets <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-center mt-8 sm:hidden">
+              <Button variant="outline" asChild>
+                <Link to="/discover">
+                  See all events <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Event Types Row ── */}
       <section className="py-16 md:py-24 bg-card">
