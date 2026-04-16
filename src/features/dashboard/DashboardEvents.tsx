@@ -18,8 +18,14 @@ import {
   Clock,
   Plus,
   BarChart3,
+  Share2,
+  Copy,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardEventsProps {
   userId: string;
@@ -28,6 +34,27 @@ interface DashboardEventsProps {
 export function DashboardEvents({ userId }: DashboardEventsProps) {
   const { data: creatorData, isLoading } = useCreatorEvents(userId);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [stripeConnected, setStripeConnected] = useState<boolean | null>(null);
+  const { toast } = useToast();
+
+  // Check if creator has Stripe connected (one-time on mount)
+  useState(() => {
+    supabase
+      .from("profiles")
+      .select("stripe_onboarding_complete")
+      .eq("id", userId)
+      .single()
+      .then(({ data }) => {
+        setStripeConnected(data?.stripe_onboarding_complete ?? false);
+      });
+  });
+
+  const copyEventLink = (eventId: string) => {
+    const url = `https://clublesscollective.com/events/${eventId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast({ title: "Link copied!", description: url });
+    });
+  };
 
   if (isLoading) {
     return (
@@ -117,6 +144,16 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
                   <Calendar className="w-3 h-3" />
                   {format(new Date(event.start_at), "MMM d")}
                 </span>
+                {["approved", "published", "live"].includes(event.status) && (
+                  <button
+                    type="button"
+                    className="ml-auto text-primary hover:text-primary/80"
+                    title="Copy share link"
+                    onClick={(e) => { e.stopPropagation(); copyEventLink(event.id); }}
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </button>
           ))}
@@ -135,6 +172,41 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
+              {/* Stripe Connect gate */}
+              {stripeConnected === false && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-yellow-400">Link your bank account to get paid</p>
+                    <p className="text-sm text-muted-foreground">Connect Stripe to receive payouts when tickets sell.</p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/settings/payments">Connect Stripe</Link>
+                  </Button>
+                </div>
+              )}
+
+              {/* Approval / live banner */}
+              {["approved", "published", "live"].includes(selectedEvent.status) && (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-green-400">
+                      {selectedEvent.status === "approved"
+                        ? "Your event is approved!"
+                        : "Your event is live!"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Share this link with your audience to start selling tickets.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => copyEventLink(selectedEvent.id)}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Link
+                  </Button>
+                </div>
+              )}
+
               <Card className="glass">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">

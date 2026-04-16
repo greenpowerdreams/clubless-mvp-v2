@@ -24,5 +24,8 @@ verify_jwt = false
 [functions.verify-payment]
 verify_jwt = false
 
+[functions.send-event-lifecycle-email]
+verify_jwt = false
+
 [functions.create-ticket-checkout]
 verify_jwt = false

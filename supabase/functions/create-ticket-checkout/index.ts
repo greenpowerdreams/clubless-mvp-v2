@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getPlatformFeePercent } from "../_shared/platform-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,10 +127,10 @@ serve(async (req) => {
     }
     logStep("Rate limit check passed");
 
-    // Fetch event details
+    // Fetch event details (include creator_id for Connect routing)
     const { data: event, error: eventError } = await supabaseAdmin
       .from("events")
-      .select("id, title, status")
+      .select("id, title, status, creator_id")
       .eq("id", event_id)
       .single();
 
@@ -238,12 +239,43 @@ serve(async (req) => {
       logStep("Found existing Stripe customer", { customerId });
     }
 
-    // Get user profile for name/phone
+    // Get buyer profile for name/phone
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("display_name, phone")
       .eq("user_id", user.id)
       .single();
+
+    // ── Stripe Connect: look up the event creator's connected account ──
+    // If the creator has completed Stripe onboarding, route the payment
+    // through their connected account with a platform application fee.
+    // If not connected, money goes to the platform account (manual payout).
+    let creatorStripeAccountId: string | null = null;
+    let applicationFeeCents = 0;
+    if (event.creator_id) {
+      const { data: creatorProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("stripe_account_id, stripe_onboarding_complete")
+        .eq("id", event.creator_id)
+        .single();
+
+      if (creatorProfile?.stripe_account_id && creatorProfile?.stripe_onboarding_complete) {
+        creatorStripeAccountId = creatorProfile.stripe_account_id;
+        const platformFeePercent = await getPlatformFeePercent(supabaseAdmin);
+        applicationFeeCents = Math.round(totalAmountCents * (platformFeePercent / 100));
+        logStep("Connect routing enabled", {
+          creatorStripeAccountId,
+          platformFeePercent,
+          applicationFeeCents,
+        });
+      } else {
+        logStep("Creator not Stripe-connected, payment goes to platform", {
+          creatorId: event.creator_id,
+          hasAccountId: !!creatorProfile?.stripe_account_id,
+          onboardingComplete: creatorProfile?.stripe_onboarding_complete,
+        });
+      }
+    }
 
     // Create pending order with reservation expiration (30 minutes)
     const reservationExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
@@ -272,8 +304,12 @@ serve(async (req) => {
     logStep("Order created with reservation expiry", { orderId: order.id, expiresAt: reservationExpiresAt });
 
     // Create Stripe checkout session
+    // If creator has a connected Stripe account, use destination charges:
+    //   - Stripe processes the full amount
+    //   - Platform keeps application_fee_amount (e.g. 5%)
+    //   - Remainder auto-transfers to the creator's connected account
     const origin = req.headers.get("origin") || "https://localhost:8080";
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: stripeLineItems,
@@ -290,8 +326,16 @@ serve(async (req) => {
           order_id: order.id,
           event_id: event_id,
         },
+        // If creator is Connect-onboarded, route funds to their account
+        ...(creatorStripeAccountId
+          ? {
+              application_fee_amount: applicationFeeCents,
+              transfer_data: { destination: creatorStripeAccountId },
+            }
+          : {}),
       },
-    });
+    };
+    const session = await stripe.checkout.sessions.create(sessionParams);
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     // Update order with Stripe session ID

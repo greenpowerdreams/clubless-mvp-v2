@@ -24,6 +24,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -106,6 +115,10 @@ export function AdminEventsTab() {
   const [sourceFilter, setSourceFilter] = useState("platform");
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Rejection reason dialog state
+  const [rejectTarget, setRejectTarget] = useState<{ eventId: string; title: string } | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -129,17 +142,61 @@ export function AdminEventsTab() {
     }
   };
 
+  // Status transitions that trigger lifecycle emails to the creator
+  const EMAIL_STATUSES = new Set(["approved", "published", "completed"]);
+
   const updateEventStatus = async (eventId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from("events")
-      .update({ status: newStatus as "draft" | "pending_approval" | "approved" | "published" | "live" | "completed" | "cancelled" })
-      .eq("id", eventId);
+    // If rejecting (cancelled), show the reason dialog instead of updating immediately
+    if (newStatus === "cancelled") {
+      const ev = events.find((e) => e.id === eventId);
+      setRejectTarget({ eventId, title: ev?.title || "this event" });
+      setRejectionReason("");
+      return; // The dialog's confirm handler calls doUpdateStatus
+    }
+    await doUpdateStatus(eventId, newStatus);
+  };
+
+  const doUpdateStatus = async (eventId: string, newStatus: string, adminNotes?: string) => {
+    const updateData: Record<string, unknown> = {
+      status: newStatus as "draft" | "pending_approval" | "approved" | "published" | "live" | "completed" | "cancelled",
+    };
+    if (adminNotes) updateData.admin_notes = adminNotes;
+
+    const { error } = await supabase.from("events").update(updateData).eq("id", eventId);
 
     if (error) {
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
-    } else {
-      setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
-      toast({ title: "Status Updated" });
+      return;
+    }
+
+    setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e)));
+    toast({ title: "Status Updated" });
+
+    // Fire lifecycle email (best-effort, don't block UI)
+    if (EMAIL_STATUSES.has(newStatus) || newStatus === "cancelled") {
+      supabase.functions
+        .invoke("send-event-lifecycle-email", {
+          body: {
+            event_id: eventId,
+            new_status: newStatus === "cancelled" ? "rejected" : newStatus,
+            admin_notes: adminNotes || null,
+          },
+        })
+        .then(({ error: emailErr }) => {
+          if (emailErr) console.error("Lifecycle email failed:", emailErr);
+          else toast({ title: "Creator notified via email" });
+        });
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectTarget) return;
+    setRejecting(true);
+    try {
+      await doUpdateStatus(rejectTarget.eventId, "cancelled", rejectionReason.trim() || undefined);
+      setRejectTarget(null);
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -391,6 +448,36 @@ export function AdminEventsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rejection reason dialog */}
+      <Dialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject this event?</DialogTitle>
+            <DialogDescription>
+              Rejecting <strong>{rejectTarget?.title}</strong>. The creator will receive an email with your reason.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Reason for rejection (will be sent to the creator)…"
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectTarget(null)} disabled={rejecting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={rejecting}
+            >
+              {rejecting ? "Rejecting…" : "Reject & Notify Creator"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

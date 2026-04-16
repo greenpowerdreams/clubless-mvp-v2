@@ -428,6 +428,19 @@ export default function CreateEvent() {
         toast.success(publish ? "Submitted for Clubless review" : "Draft saved");
       }
 
+      // Notify admin + send creator receipt when submitting for review (fire-and-forget)
+      if (publish) {
+        supabase.functions
+          .invoke("send-event-lifecycle-email", {
+            body: {
+              event_id: eventData.id,
+              new_status: "pending_approval",
+              notify_admin: true,
+            },
+          })
+          .catch(() => {}); // best-effort, don't block navigation
+      }
+
       navigate(`/dashboard?tab=events`);
     } catch (err) {
       console.error("Create event failed:", err);
