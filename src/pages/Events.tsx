@@ -146,9 +146,14 @@ export default function Events() {
   useEffect(() => {
     const fetchPlatform = async () => {
       try {
+        // Only show events created on the Clubless platform — NOT scraped rows
+        // from Eventbrite/Posh/etc. Those live in the same events table (single
+        // source of truth post-Phase 0 cutover) but appear in the "Happening
+        // this weekend" curated feed above, not under "Clubless Events".
         const { data } = await supabase
           .from("events")
           .select(`id, title, city, start_at, capacity, cover_image_url, theme, status, tickets(price_cents, qty_total, qty_sold)`)
+          .eq("source", "platform")
           .in("status", ["published", "live"])
           .gte("end_at", new Date().toISOString())
           .order("start_at", { ascending: true });

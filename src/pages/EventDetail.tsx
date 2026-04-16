@@ -139,8 +139,11 @@ export default function EventDetail() {
           )
         `
         )
+        // Deliberately no status filter here — EventDetail is UUID-gated, so the
+        // only way to hit a draft / pending_approval row is via an admin preview
+        // link or the creator's own dashboard. The buy flow still gates on status
+        // server-side in create-ticket-checkout.
         .eq("id", id)
-        .in("status", ["published", "live"])
         .single();
 
       if (error) throw error;

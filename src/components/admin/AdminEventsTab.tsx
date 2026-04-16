@@ -5,16 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Eye, 
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Eye,
   Search,
-  Ticket,
-  DollarSign,
-  ExternalLink
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -30,6 +39,8 @@ interface Event {
   capacity: number;
   cover_image_url: string | null;
   creator_id: string;
+  source: string | null;
+  source_url: string | null;
 }
 
 interface Ticket {
@@ -59,6 +70,31 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+// Admin filter: default to 'platform' so scraped feed doesn't drown out real submissions.
+// Flip to 'all' or a specific scraper source to moderate that surface.
+const SOURCE_OPTIONS = [
+  { value: "platform", label: "Clubless Only" },
+  { value: "all", label: "All Sources" },
+  { value: "eventbrite", label: "Eventbrite (scraped)" },
+  { value: "posh", label: "Posh (scraped)" },
+  { value: "manual", label: "Manual" },
+];
+
+const getSourceColor = (source: string | null) => {
+  switch (source) {
+    case "platform":
+      return "bg-primary/20 text-primary";
+    case "eventbrite":
+      return "bg-orange-500/20 text-orange-400";
+    case "posh":
+      return "bg-pink-500/20 text-pink-400";
+    case "manual":
+      return "bg-purple-500/20 text-purple-400";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+};
+
 export function AdminEventsTab() {
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
@@ -67,6 +103,9 @@ export function AdminEventsTab() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("platform");
+  const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -104,6 +143,25 @@ export function AdminEventsTab() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Delete tickets first (FK constraint) — only platform events will have these.
+      await supabase.from("tickets").delete().eq("event_id", deleteTarget.id);
+      const { error } = await supabase.from("events").delete().eq("id", deleteTarget.id);
+      if (error) throw error;
+      setEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+      toast({ title: "Event deleted", description: deleteTarget.title });
+      setDeleteTarget(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Delete failed", description: msg, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       draft: "bg-muted text-muted-foreground",
@@ -125,7 +183,8 @@ export function AdminEventsTab() {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.city.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || event.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSource = sourceFilter === "all" || (event.source || "platform") === sourceFilter;
+    return matchesSearch && matchesStatus && matchesSource;
   });
 
   const getEventStats = (eventId: string) => {
@@ -156,6 +215,16 @@ export function AdminEventsTab() {
             className="pl-9"
           />
         </div>
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by source" />
+          </SelectTrigger>
+          <SelectContent>
+            {SOURCE_OPTIONS.map(s => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
@@ -216,10 +285,13 @@ export function AdminEventsTab() {
                 <CardContent className="pt-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <h3 className="font-semibold truncate">{event.title}</h3>
                         <Badge className={getStatusColor(event.status)}>
                           {event.status.replace(/_/g, " ")}
+                        </Badge>
+                        <Badge className={getSourceColor(event.source)} variant="outline">
+                          {event.source || "unknown"}
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -261,10 +333,28 @@ export function AdminEventsTab() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button variant="outline" size="icon" asChild>
-                          <Link to={`/events/${event.id}`}>
-                            <Eye className="w-4 h-4" />
-                          </Link>
+                        <Button variant="outline" size="icon" asChild title="Preview">
+                          {event.source === "platform" || !event.source ? (
+                            <Link to={`/events/${event.id}`}>
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          ) : event.source_url ? (
+                            <a href={event.source_url} target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          ) : (
+                            <Link to={`/events/${event.id}`}>
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          title="Delete"
+                          onClick={() => setDeleteTarget(event)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
@@ -275,6 +365,32 @@ export function AdminEventsTab() {
           })}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  This permanently removes <strong>{deleteTarget.title}</strong> ({deleteTarget.source || "unknown"} source)
+                  and all linked tickets. This cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
