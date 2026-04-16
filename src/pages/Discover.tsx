@@ -280,7 +280,7 @@ export default function Discover() {
 
   // ─── Fetch all data on mount ───────────────────────────────────
 
-  // Curated events
+  // Curated events — always include featured events regardless of time range
   useEffect(() => {
     const fetchCurated = async () => {
       try {
@@ -290,12 +290,30 @@ export default function Discover() {
           .split("T")[0];
         const fields =
           "name,venue,neighborhood,event_date,event_time,genre,image_url,ticket_url,source_url,price,featured,popularity_score";
-        const res = await fetch(
-          `${SB_URL}/rest/v1/events?event_date=gte.${today}&event_date=lte.${maxDate}&image_url=neq.&order=event_date.asc,popularity_score.desc&limit=100&select=${fields}`,
-          { headers: HDR }
-        );
-        if (!res.ok) throw new Error("Failed to fetch");
-        setCuratedEvents(await res.json());
+
+        // Fetch time-ranged events + featured events in parallel
+        const [rangedRes, featuredRes] = await Promise.all([
+          fetch(
+            `${SB_URL}/rest/v1/events?event_date=gte.${today}&event_date=lte.${maxDate}&image_url=neq.&order=event_date.asc,popularity_score.desc&limit=100&select=${fields}`,
+            { headers: HDR }
+          ),
+          fetch(
+            `${SB_URL}/rest/v1/events?featured=eq.true&event_date=gte.${today}&image_url=neq.&order=event_date.asc&limit=10&select=${fields}`,
+            { headers: HDR }
+          ),
+        ]);
+
+        const ranged = rangedRes.ok ? await rangedRes.json() : [];
+        const featured = featuredRes.ok ? await featuredRes.json() : [];
+
+        // Merge: add any featured events not already in the ranged set
+        const rangedNames = new Set(ranged.map((e: CuratedEvent) => e.name));
+        const merged = [
+          ...ranged,
+          ...featured.filter((e: CuratedEvent) => !rangedNames.has(e.name)),
+        ];
+
+        setCuratedEvents(merged);
       } catch (err) {
         console.error("Curated fetch error:", err);
       }
