@@ -5,12 +5,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, MapPin, Ticket } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Calendar, MapPin, Ticket, RotateCcw } from "lucide-react";
 import { TicketQRCode } from "@/components/tickets/TicketQRCode";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TicketWithEvent {
   id: string;
+  order_id: string;
   qr_code: string;
   status: string;
   holder_name: string | null;
@@ -24,8 +35,12 @@ interface TicketWithEvent {
 
 export default function MyTickets() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tickets, setTickets] = useState<TicketWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refundDialog, setRefundDialog] = useState<TicketWithEvent | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [submittingRefund, setSubmittingRefund] = useState(false);
 
   useEffect(() => {
     loadTickets();
@@ -37,13 +52,14 @@ export default function MyTickets() {
 
     const { data, error } = await supabase
       .from("ticket_instances")
-      .select("id, qr_code, status, holder_name, tier_id, event_id, tickets(name), events(title, start_at, end_at, city)")
+      .select("id, order_id, qr_code, status, holder_name, tier_id, event_id, tickets(name), events(title, start_at, end_at, city)")
       .eq("holder_id", session.user.id)
       .order("created_at", { ascending: false });
 
     if (!error && data) {
       setTickets(data.map((d: any) => ({
         id: d.id,
+        order_id: d.order_id,
         qr_code: d.qr_code,
         status: d.status,
         holder_name: d.holder_name,
@@ -100,16 +116,65 @@ export default function MyTickets() {
                 </div>
               )}
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex items-center gap-2">
               <Badge className={statusColor[t.status] ?? ""} variant="secondary">
                 {t.status.charAt(0).toUpperCase() + t.status.slice(1).toLowerCase()}
               </Badge>
+              {t.status === "valid" && !isPast(t) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-red-500"
+                  onClick={() => {
+                    setRefundDialog(t);
+                    setRefundReason("");
+                  }}
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  Request Refund
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
   );
+
+  const submitRefundRequest = async () => {
+    if (!refundDialog || !refundReason.trim()) return;
+    setSubmittingRefund(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { navigate("/login"); return; }
+
+      const { error } = await supabase.from("refund_requests").insert({
+        order_id: refundDialog.order_id,
+        ticket_instance_id: refundDialog.id,
+        user_id: session.user.id,
+        reason: refundReason.trim(),
+        status: "pending",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Refund request submitted",
+        description: "We'll review your request and get back to you within 48 hours.",
+      });
+      setRefundDialog(null);
+      setRefundReason("");
+    } catch (err) {
+      toast({
+        title: "Failed to submit request",
+        description: err instanceof Error ? err.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingRefund(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -157,6 +222,60 @@ export default function MyTickets() {
           </Tabs>
         )}
       </div>
+
+      {/* Refund Request Dialog */}
+      <Dialog
+        open={!!refundDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRefundDialog(null);
+            setRefundReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request a Refund</DialogTitle>
+            <DialogDescription>
+              We'll review your request within 48 hours. Approved refunds typically arrive in 5-10 business days.
+            </DialogDescription>
+          </DialogHeader>
+
+          {refundDialog && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted rounded-lg p-3">
+                <p className="font-medium text-sm">{refundDialog.event_title}</p>
+                <p className="text-xs text-muted-foreground">{refundDialog.tier_name}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Why are you requesting a refund? <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="e.g. I can no longer attend, scheduling conflict..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRefundDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={submitRefundRequest}
+              disabled={!refundReason.trim() || submittingRefund}
+            >
+              {submittingRefund && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

@@ -53,6 +53,7 @@ import { ErrorLogsTab } from "@/components/admin/ErrorLogsTab";
 import { AdminEventsTab } from "@/components/admin/AdminEventsTab";
 import { AdminPayoutsTab } from "@/components/admin/AdminPayoutsTab";
 import { AdminVendorsTab } from "@/components/admin/AdminVendorsTab";
+import { AdminRefundsTab } from "@/components/admin/AdminRefundsTab";
 
 interface ProfitSummary {
   attendance?: number;
@@ -501,7 +502,7 @@ export default function AdminDashboard() {
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <TabsList className="grid w-full sm:w-auto grid-cols-6">
+            <TabsList className="grid w-full sm:w-auto grid-cols-7">
               <TabsTrigger value="proposals" className="gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Proposals</span>
@@ -513,6 +514,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="payouts" className="gap-2">
                 <DollarSign className="w-4 h-4" />
                 <span className="hidden sm:inline">Payouts</span>
+              </TabsTrigger>
+              <TabsTrigger value="refunds" className="gap-2">
+                <DollarSign className="w-4 h-4" />
+                <span className="hidden sm:inline">Refunds</span>
               </TabsTrigger>
               <TabsTrigger value="vendors" className="gap-2">
                 <Users className="w-4 h-4" />
@@ -881,6 +886,11 @@ export default function AdminDashboard() {
           {/* Payouts Tab */}
           <TabsContent value="payouts">
             <AdminPayoutsTab />
+          </TabsContent>
+
+          {/* Refunds Tab */}
+          <TabsContent value="refunds">
+            <AdminRefundsTab />
           </TabsContent>
 
           {/* Vendors Tab */}
