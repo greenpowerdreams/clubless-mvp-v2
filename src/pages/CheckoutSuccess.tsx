@@ -27,6 +27,7 @@ export default function CheckoutSuccess() {
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   const orderId = searchParams.get("order_id");
   const sessionId = searchParams.get("session_id");
@@ -45,16 +46,34 @@ export default function CheckoutSuccess() {
     setVerifying(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        setError("Please log in to view your order");
-        setLoading(false);
-        return;
-      }
+      const isGuest = !sessionData.session;
+      setIsGuest(isGuest);
 
       // Call verify-payment edge function
-      const { data, error: verifyError } = await supabase.functions.invoke("verify-payment", {
-        body: { session_id: sessionId, order_id: orderId },
-      });
+      // For guests, use raw fetch without auth header
+      let data: any;
+      let verifyError: any;
+
+      if (isGuest) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/verify-payment`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify({ session_id: sessionId, order_id: orderId }),
+        });
+        data = await res.json();
+        if (!res.ok) verifyError = { message: data.error || "Verification failed" };
+      } else {
+        const result = await supabase.functions.invoke("verify-payment", {
+          body: { session_id: sessionId, order_id: orderId },
+        });
+        data = result.data;
+        verifyError = result.error;
+      }
 
       if (verifyError) {
         throw new Error(verifyError.message || "Failed to verify payment");
@@ -65,37 +84,50 @@ export default function CheckoutSuccess() {
       }
 
       // Fetch order details with event info
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .select(`
-          id,
-          amount_cents,
-          status,
-          line_items_json,
-          events (
-            title,
-            start_at,
-            city
-          )
-        `)
-        .eq("id", orderId)
-        .single();
+      // For guests, order details come from the verify-payment response or a public query
+      if (isGuest && data?.order_id) {
+        // Use the data we already have from verification
+        // Try to fetch order via service — guests can't query orders table directly
+        // but the verify-payment response already confirmed success
+        setOrder({
+          id: data.order_id,
+          amount_cents: 0, // Guest won't see amounts in the fallback
+          status: "completed",
+          line_items: [],
+        });
+      } else {
+        const { data: orderData, error: orderError } = await supabase
+          .from("orders")
+          .select(`
+            id,
+            amount_cents,
+            status,
+            line_items_json,
+            events (
+              title,
+              start_at,
+              city
+            )
+          `)
+          .eq("id", orderId)
+          .single();
 
-      if (orderError) {
-        throw new Error("Failed to fetch order details");
+        if (orderError) {
+          throw new Error("Failed to fetch order details");
+        }
+
+        const eventData = orderData.events as { title: string; start_at: string; city: string } | null;
+
+        setOrder({
+          id: orderData.id,
+          amount_cents: orderData.amount_cents,
+          status: orderData.status,
+          event_title: eventData?.title,
+          event_date: eventData?.start_at,
+          event_city: eventData?.city,
+          line_items: orderData.line_items_json as OrderDetails["line_items"],
+        });
       }
-
-      const eventData = orderData.events as { title: string; start_at: string; city: string } | null;
-
-      setOrder({
-        id: orderData.id,
-        amount_cents: orderData.amount_cents,
-        status: orderData.status,
-        event_title: eventData?.title,
-        event_date: eventData?.start_at,
-        event_city: eventData?.city,
-        line_items: orderData.line_items_json as OrderDetails["line_items"],
-      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -171,8 +203,9 @@ export default function CheckoutSuccess() {
             </div>
             <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
             <p className="text-muted-foreground">
-              Your tickets are ready. View your QR codes in My Tickets — you'll
-              also get a confirmation email.
+              {isGuest
+                ? "Check your email for your ticket confirmation and QR codes."
+                : "Your tickets are ready. View your QR codes in My Tickets — you'll also get a confirmation email."}
             </p>
           </div>
 
@@ -244,12 +277,25 @@ export default function CheckoutSuccess() {
           )}
 
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg">
-              <Link to="/my-tickets">View My Tickets</Link>
-            </Button>
-            <Button variant="outline" asChild size="lg">
-              <Link to="/events">Discover More Events</Link>
-            </Button>
+            {isGuest ? (
+              <>
+                <Button asChild size="lg">
+                  <Link to="/events">Discover More Events</Link>
+                </Button>
+                <Button variant="outline" asChild size="lg">
+                  <Link to="/signup">Create an Account</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg">
+                  <Link to="/my-tickets">View My Tickets</Link>
+                </Button>
+                <Button variant="outline" asChild size="lg">
+                  <Link to="/events">Discover More Events</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

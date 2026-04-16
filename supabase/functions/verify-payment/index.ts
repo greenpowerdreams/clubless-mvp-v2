@@ -31,17 +31,18 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Authenticate user
+    // Authenticate user (optional for guest checkout)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    let userId: string | null = null;
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    
-    const user = userData.user;
-    if (!user) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (!userError && userData.user) {
+        userId = userData.user.id;
+      }
+    }
+    logStep(userId ? "Authenticated user" : "Guest verification", { userId });
 
     // Parse request
     const { session_id, order_id } = await req.json();
@@ -60,7 +61,9 @@ serve(async (req) => {
     if (orderError || !order) {
       throw new Error("Order not found");
     }
-    if (order.buyer_user_id !== user.id) {
+    // Ownership check: authenticated users must own the order; guest orders
+    // are verified by the order_id + session_id combo (both are unguessable)
+    if (order.buyer_user_id && userId && order.buyer_user_id !== userId) {
       throw new Error("Order does not belong to this user");
     }
     if (order.status === "completed") {

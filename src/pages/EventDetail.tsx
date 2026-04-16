@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -23,7 +32,9 @@ import {
   Ticket,
   Share2,
   Heart,
+  Mail,
 } from "lucide-react";
+import { EventQRCode } from "@/components/event/EventQRCode";
 
 interface TicketRow {
   id: string;
@@ -49,6 +60,7 @@ interface Event {
   cover_image_url: string | null;
   theme: string | null;
   status: string;
+  slug: string | null;
   tickets: TicketRow[];
 }
 
@@ -57,10 +69,14 @@ interface TicketSelection {
 }
 
 export default function EventDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Determine if we're looking up by UUID or slug
+  const isUUID = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const lookupKey = isUUID ? id : slug || id; // slug param from /e/:slug or fallback
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +84,11 @@ export default function EventDetail() {
   const [ticketSelection, setTicketSelection] = useState<TicketSelection>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Guest checkout state
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestName, setGuestName] = useState("");
 
   useSEO({
     title: event ? `${event.title} | Clubless Collective` : "Event | Clubless Collective",
@@ -97,7 +118,7 @@ export default function EventDetail() {
   useEffect(() => {
     fetchEvent();
     checkAuth();
-  }, [id]);
+  }, [id, slug]);
 
   const checkAuth = async () => {
     const {
@@ -108,10 +129,10 @@ export default function EventDetail() {
   };
 
   const fetchEvent = async () => {
-    if (!id) return;
+    if (!lookupKey) return;
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("events")
         .select(
           `
@@ -126,6 +147,7 @@ export default function EventDetail() {
           cover_image_url,
           theme,
           status,
+          slug,
           tickets (
             id,
             name,
@@ -138,13 +160,16 @@ export default function EventDetail() {
             active
           )
         `
-        )
-        // Deliberately no status filter here — EventDetail is UUID-gated, so the
-        // only way to hit a draft / pending_approval row is via an admin preview
-        // link or the creator's own dashboard. The buy flow still gates on status
-        // server-side in create-ticket-checkout.
-        .eq("id", id)
-        .single();
+        );
+
+      // Look up by UUID or slug
+      if (isUUID) {
+        query = query.eq("id", lookupKey);
+      } else {
+        query = query.eq("slug", lookupKey);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) throw error;
 
@@ -312,16 +337,6 @@ export default function EventDetail() {
     Object.values(ticketSelection).reduce((sum, qty) => sum + qty, 0);
 
   const handleCheckout = async () => {
-    if (!isAuthenticated) {
-      navigate("/login", {
-        state: {
-          redirectTo: `/events/${id}`,
-          preservedState: { ticketSelection },
-        },
-      });
-      return;
-    }
-
     if (getTotalTickets() === 0) {
       toast({
         title: "No tickets selected",
@@ -331,6 +346,31 @@ export default function EventDetail() {
       return;
     }
 
+    // If not authenticated, show guest checkout modal
+    if (!isAuthenticated) {
+      setShowGuestModal(true);
+      return;
+    }
+
+    // Authenticated checkout
+    await processCheckout();
+  };
+
+  const handleGuestCheckout = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!guestEmail || !emailRegex.test(guestEmail)) {
+      toast({
+        title: "Valid email required",
+        description: "We'll send your tickets to this email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowGuestModal(false);
+    await processCheckout({ email: guestEmail, name: guestName });
+  };
+
+  const processCheckout = async (guest?: { email: string; name: string }) => {
     setCheckingOut(true);
     try {
       const lineItems = Object.entries(ticketSelection)
@@ -340,14 +380,42 @@ export default function EventDetail() {
           quantity: qty,
         }));
 
+      const body: Record<string, unknown> = {
+        event_id: id,
+        line_items: lineItems,
+      };
+
+      // For guest checkout, include email and name, and don't send auth header
+      if (guest) {
+        body.buyer_email = guest.email;
+        body.buyer_name = guest.name || undefined;
+      }
+
+      const invokeOptions: { body: Record<string, unknown>; headers?: Record<string, string> } = { body };
+
+      // For guest checkout, explicitly remove the Authorization header
+      // by passing an empty headers object (supabase client auto-adds auth)
+      if (guest) {
+        // Use fetch directly to avoid supabase client adding auth header
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/create-ticket-checkout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || "Checkout failed");
+        if (data.url) window.location.href = data.url;
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke(
         "create-ticket-checkout",
-        {
-          body: {
-            event_id: id,
-            line_items: lineItems,
-          },
-        }
+        invokeOptions,
       );
 
       if (error) throw error;
@@ -420,6 +488,17 @@ export default function EventDetail() {
 
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex gap-2">
+          {event && (
+            <div className="bg-background/80 backdrop-blur-sm rounded-md">
+              <EventQRCode
+                url={event.slug
+                  ? `https://clublesscollective.com/e/${event.slug}`
+                  : `https://clublesscollective.com/events/${event.id}`}
+                title={event.title}
+                variant="icon"
+              />
+            </div>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -633,8 +712,6 @@ export default function EventDetail() {
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Processing...
                         </>
-                      ) : !isAuthenticated ? (
-                        "Sign in to Purchase"
                       ) : getTotalTickets() === 0 ? (
                         "Select Tickets"
                       ) : (
@@ -642,9 +719,9 @@ export default function EventDetail() {
                       )}
                     </Button>
 
-                    {!isAuthenticated && (
+                    {!isAuthenticated && getTotalTickets() > 0 && (
                       <p className="text-xs text-center text-muted-foreground">
-                        You'll need to sign in to complete your purchase
+                        No account needed — just enter your email at checkout
                       </p>
                     )}
                   </>
@@ -654,6 +731,57 @@ export default function EventDetail() {
           </div>
         </div>
       </div>
+
+      {/* Guest Checkout Modal */}
+      <Dialog open={showGuestModal} onOpenChange={setShowGuestModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Quick Checkout
+            </DialogTitle>
+            <DialogDescription>
+              Enter your email to receive your tickets. No account required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Email <span className="text-red-400">*</span>
+              </label>
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleGuestCheckout()}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Name <span className="text-muted-foreground">(optional)</span>
+              </label>
+              <Input
+                type="text"
+                placeholder="Your name"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleGuestCheckout()}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" className="sm:flex-1" asChild>
+              <Link to={`/login?redirect=/events/${id}`}>
+                Sign in instead
+              </Link>
+            </Button>
+            <Button className="sm:flex-1" onClick={handleGuestCheckout}>
+              Continue to Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

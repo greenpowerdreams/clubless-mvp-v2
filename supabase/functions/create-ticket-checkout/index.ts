@@ -97,29 +97,47 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Authenticate user
+    // Authenticate user (optional for guest checkout)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    let user: { id: string; email: string } | null = null;
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError) throw new Error(`Authentication error: ${userError.message}`);
+      if (userData.user?.email) {
+        user = { id: userData.user.id, email: userData.user.email };
+      }
+    }
 
     // Parse request body
-    const { event_id, line_items }: CheckoutRequest = await req.json();
+    const body = await req.json();
+    const { event_id, line_items, buyer_email, buyer_name } = body as CheckoutRequest & {
+      buyer_email?: string;
+      buyer_name?: string;
+    };
     if (!event_id || !line_items || line_items.length === 0) {
       throw new Error("Missing event_id or line_items");
     }
+
+    // For guest checkout, require email
+    const resolvedEmail = user?.email || buyer_email;
+    const resolvedName = buyer_name || null;
+    if (!resolvedEmail) {
+      throw new Error("Email is required. Please sign in or provide an email address.");
+    }
+    const isGuest = !user;
+    logStep(isGuest ? "Guest checkout" : "Authenticated checkout", {
+      email: resolvedEmail,
+      userId: user?.id ?? "guest",
+    });
     logStep("Request parsed", { event_id, lineItemCount: line_items.length });
 
-    // Check rate limit before processing
-    const rateLimitResult = await checkRateLimit(user.id, event_id);
+    // Check rate limit (use user_id if authenticated, email hash if guest)
+    const rateLimitKey = user?.id || `guest_${resolvedEmail.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    const rateLimitResult = await checkRateLimit(rateLimitKey, event_id);
     if (!rateLimitResult.allowed) {
-      logStep("Rate limit exceeded", { userId: user.id, eventId: event_id });
+      logStep("Rate limit exceeded", { key: rateLimitKey, eventId: event_id });
       return new Response(JSON.stringify({ error: rateLimitResult.reason }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 429,
@@ -232,19 +250,25 @@ serve(async (req) => {
     });
 
     // Check for existing Stripe customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: resolvedEmail, limit: 1 });
     let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Found existing Stripe customer", { customerId });
     }
 
-    // Get buyer profile for name/phone
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("display_name, phone")
-      .eq("user_id", user.id)
-      .single();
+    // Get buyer profile for name/phone (only for authenticated users)
+    let profileName: string | null = resolvedName;
+    let profilePhone: string | null = null;
+    if (user) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("display_name, phone")
+        .eq("user_id", user.id)
+        .single();
+      profileName = profile?.display_name || resolvedName;
+      profilePhone = profile?.phone || null;
+    }
 
     // ── Stripe Connect: look up the event creator's connected account ──
     // If the creator has completed Stripe onboarding, route the payment
@@ -284,10 +308,10 @@ serve(async (req) => {
       .from("orders")
       .insert({
         event_id,
-        buyer_user_id: user.id,
-        buyer_email: user.email,
-        buyer_name: profile?.display_name || null,
-        buyer_phone: profile?.phone || null,
+        buyer_user_id: user?.id || null,
+        buyer_email: resolvedEmail,
+        buyer_name: profileName,
+        buyer_phone: profilePhone,
         amount_cents: totalAmountCents,
         line_items_json: orderLineItems,
         status: "pending",
@@ -311,7 +335,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://localhost:8080";
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId ? undefined : resolvedEmail,
       line_items: stripeLineItems,
       mode: "payment",
       success_url: `${origin}/checkout/success?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
@@ -319,7 +343,7 @@ serve(async (req) => {
       metadata: {
         order_id: order.id,
         event_id: event_id,
-        user_id: user.id,
+        user_id: user?.id || "guest",
       },
       payment_intent_data: {
         metadata: {

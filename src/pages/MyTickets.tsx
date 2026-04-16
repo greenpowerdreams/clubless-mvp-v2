@@ -17,6 +17,7 @@ interface TicketWithEvent {
   tier_name: string;
   event_title: string;
   event_start: string | null;
+  event_end: string | null;
   event_city: string | null;
   event_id: string;
 }
@@ -36,7 +37,7 @@ export default function MyTickets() {
 
     const { data, error } = await supabase
       .from("ticket_instances")
-      .select("id, qr_code, status, holder_name, tier_id, event_id, tickets(name), events(title, start_at, city)")
+      .select("id, qr_code, status, holder_name, tier_id, event_id, tickets(name), events(title, start_at, end_at, city)")
       .eq("holder_id", session.user.id)
       .order("created_at", { ascending: false });
 
@@ -49,6 +50,7 @@ export default function MyTickets() {
         tier_name: d.tickets?.name ?? "Ticket",
         event_title: d.events?.title ?? "Event",
         event_start: d.events?.start_at ?? null,
+        event_end: d.events?.end_at ?? null,
         event_city: d.events?.city ?? null,
         event_id: d.event_id,
       })));
@@ -57,8 +59,15 @@ export default function MyTickets() {
   };
 
   const now = new Date();
-  const upcoming = tickets.filter(t => !t.event_start || new Date(t.event_start) >= now);
-  const past = tickets.filter(t => t.event_start && new Date(t.event_start) < now);
+  // Use end_at to determine if event is past (so in-progress events stay in "Upcoming")
+  // Fall back to start_at + 6 hours if no end_at
+  const isPast = (t: TicketWithEvent) => {
+    if (t.event_end) return new Date(t.event_end) < now;
+    if (t.event_start) return new Date(new Date(t.event_start).getTime() + 6 * 60 * 60 * 1000) < now;
+    return false;
+  };
+  const upcoming = tickets.filter(t => !isPast(t));
+  const past = tickets.filter(t => isPast(t));
 
   const statusColor: Record<string, string> = {
     valid: "bg-green-500/10 text-green-500",

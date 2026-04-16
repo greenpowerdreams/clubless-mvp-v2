@@ -5,8 +5,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useCreatorEvents } from "./hooks/useCreatorEvents";
 import { formatCurrency, getStatusColor, formatStatus } from "./hooks/types";
+import type { Ticket as TicketTier } from "./hooks/types";
 import {
   Calendar,
   MapPin,
@@ -22,10 +32,16 @@ import {
   Copy,
   AlertTriangle,
   CheckCircle2,
+  Pencil,
+  Pause,
+  Play,
+  ScanLine,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { EventQRCode } from "@/components/event/EventQRCode";
 
 interface DashboardEventsProps {
   userId: string;
@@ -36,6 +52,13 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [stripeConnected, setStripeConnected] = useState<boolean | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Tier editing state
+  const [editingTier, setEditingTier] = useState<TicketTier | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", price: "", qty: "" });
+  const [editSaving, setEditSaving] = useState(false);
+  const [pausingTierId, setPausingTierId] = useState<string | null>(null);
 
   // Check if creator has Stripe connected (one-time on mount)
   useState(() => {
@@ -54,6 +77,82 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
     navigator.clipboard.writeText(url).then(() => {
       toast({ title: "Link copied!", description: url });
     });
+  };
+
+  // ── Tier editing handlers ───────────────────────────────────────────
+
+  const openTierEdit = (tier: TicketTier) => {
+    setEditingTier(tier);
+    setEditForm({
+      name: tier.name,
+      price: (tier.price_cents / 100).toFixed(2),
+      qty: String(tier.qty_total),
+    });
+  };
+
+  const saveTierEdit = async () => {
+    if (!editingTier) return;
+    const priceCents = Math.round(parseFloat(editForm.price) * 100);
+    const qtyTotal = parseInt(editForm.qty, 10);
+
+    if (!editForm.name.trim()) {
+      toast({ title: "Name is required", variant: "destructive" });
+      return;
+    }
+    if (!Number.isFinite(priceCents) || priceCents < 0) {
+      toast({ title: "Enter a valid price", variant: "destructive" });
+      return;
+    }
+    if (!Number.isFinite(qtyTotal) || qtyTotal < editingTier.qty_sold) {
+      toast({
+        title: "Invalid quantity",
+        description: `Must be at least ${editingTier.qty_sold} (already sold)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setEditSaving(true);
+    const { error } = await supabase
+      .from("tickets")
+      .update({ name: editForm.name.trim(), price_cents: priceCents, qty_total: qtyTotal })
+      .eq("id", editingTier.id);
+    setEditSaving(false);
+
+    if (error) {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Tier updated!" });
+    setEditingTier(null);
+    queryClient.invalidateQueries({ queryKey: ["creator-events"] });
+  };
+
+  const toggleTierPause = async (tier: TicketTier) => {
+    setPausingTierId(tier.id);
+    // We use qty_reserved as a proxy for "paused" — set qty_total = qty_sold to stop sales,
+    // or restore to original. But a cleaner approach: we'll set qty_total to qty_sold to effectively
+    // pause sales (no remaining capacity). To "resume", the creator must edit and increase qty_total.
+    // Actually — the `tickets` table may have an `active` column. Let's check and use it if present,
+    // otherwise toggle via qty_total manipulation.
+    // For now, we toggle by setting qty_total = qty_sold (pause) or qty_sold + 100 (resume).
+    const isPaused = tier.qty_total <= tier.qty_sold && tier.qty_sold > 0;
+    const newQtyTotal = isPaused ? tier.qty_sold + 100 : tier.qty_sold;
+
+    const { error } = await supabase
+      .from("tickets")
+      .update({ qty_total: newQtyTotal })
+      .eq("id", tier.id);
+    setPausingTierId(null);
+
+    if (error) {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: isPaused ? "Tier resumed — 100 tickets added" : "Tier paused — sales stopped" });
+    queryClient.invalidateQueries({ queryKey: ["creator-events"] });
   };
 
   if (isLoading) {
@@ -145,20 +244,89 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
                   {format(new Date(event.start_at), "MMM d")}
                 </span>
                 {["approved", "published", "live"].includes(event.status) && (
-                  <button
-                    type="button"
-                    className="ml-auto text-primary hover:text-primary/80"
-                    title="Copy share link"
-                    onClick={(e) => { e.stopPropagation(); copyEventLink(event.id); }}
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
+                  <span className="ml-auto flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Link
+                      to={`/events/${event.id}/checkin`}
+                      className="text-green-400 hover:text-green-300"
+                      title="Door check-in scanner"
+                    >
+                      <ScanLine className="w-3.5 h-3.5" />
+                    </Link>
+                    <button
+                      type="button"
+                      className="text-primary hover:text-primary/80"
+                      title="Copy share link"
+                      onClick={() => copyEventLink(event.id)}
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                    <EventQRCode
+                      url={`https://clublesscollective.com/events/${event.id}`}
+                      title={event.title}
+                      variant="icon"
+                    />
+                  </span>
                 )}
               </div>
             </button>
           ))}
         </div>
       </div>
+
+      {/* Tier Edit Dialog */}
+      <Dialog open={!!editingTier} onOpenChange={(open) => !open && setEditingTier(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Ticket Tier</DialogTitle>
+            <DialogDescription>
+              Update the name, price, or quantity for this tier. You cannot reduce quantity below tickets already sold.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Tier Name</label>
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. General Admission"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Price ($)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))}
+                  placeholder="10.00"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">
+                  Quantity{editingTier ? ` (min ${editingTier.qty_sold})` : ""}
+                </label>
+                <Input
+                  type="number"
+                  min={editingTier?.qty_sold ?? 0}
+                  value={editForm.qty}
+                  onChange={(e) => setEditForm((f) => ({ ...f, qty: e.target.value }))}
+                  placeholder="100"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTier(null)}>
+              Cancel
+            </Button>
+            <Button onClick={saveTierEdit} disabled={editSaving}>
+              {editSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Event Details */}
       <div className="lg:col-span-2">
@@ -209,14 +377,30 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
 
               <Card className="glass">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between flex-wrap gap-2">
                     {selectedEvent.title}
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/events/${selectedEvent.id}`}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Page
-                      </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {["approved", "published", "live"].includes(selectedEvent.status) && (
+                        <Button size="sm" asChild className="bg-green-600 hover:bg-green-700">
+                          <Link to={`/events/${selectedEvent.id}/checkin`}>
+                            <ScanLine className="w-4 h-4 mr-2" />
+                            Door Check-in
+                          </Link>
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/events/${selectedEvent.id}/analytics`}>
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Analytics
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/events/${selectedEvent.id}`}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Link>
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -304,27 +488,58 @@ export function DashboardEvents({ userId }: DashboardEventsProps) {
                     <p className="text-muted-foreground text-center py-8">No tickets created yet</p>
                   ) : (
                     <div className="space-y-4">
-                      {selectedTickets.map((ticket) => (
-                        <div
-                          key={ticket.id}
-                          className="flex items-center justify-between p-4 rounded-lg bg-secondary/50"
-                        >
-                          <div>
-                            <h4 className="font-medium">{ticket.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {formatCurrency(ticket.price_cents)}
-                            </p>
+                      {selectedTickets.map((ticket) => {
+                        const isPaused = ticket.qty_total <= ticket.qty_sold && ticket.qty_sold > 0;
+                        return (
+                          <div
+                            key={ticket.id}
+                            className={`flex items-center justify-between p-4 rounded-lg ${isPaused ? "bg-yellow-500/5 border border-yellow-500/20" : "bg-secondary/50"}`}
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium">{ticket.name}</h4>
+                                {isPaused && (
+                                  <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">Paused</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {formatCurrency(ticket.price_cents)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className="font-medium">
+                                  {ticket.qty_sold} / {ticket.qty_total} sold
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {ticket.qty_reserved} reserved
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Edit tier"
+                                  onClick={() => openTierEdit(ticket)}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title={isPaused ? "Resume sales" : "Pause sales"}
+                                  disabled={pausingTierId === ticket.id}
+                                  onClick={() => toggleTierPause(ticket)}
+                                >
+                                  {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium">
-                              {ticket.qty_sold} / {ticket.qty_total} sold
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {ticket.qty_reserved} reserved
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>

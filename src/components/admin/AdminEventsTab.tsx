@@ -13,6 +13,7 @@ import {
   Search,
   Trash2,
   ExternalLink,
+  ScanLine,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -390,6 +391,13 @@ export function AdminEventsTab() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {["approved", "published", "live"].includes(event.status) && (
+                          <Button variant="outline" size="icon" asChild title="Door Check-in">
+                            <Link to={`/events/${event.id}/checkin`}>
+                              <ScanLine className="w-4 h-4 text-green-400" />
+                            </Link>
+                          </Button>
+                        )}
                         <Button variant="outline" size="icon" asChild title="Preview">
                           {event.source === "platform" || !event.source ? (
                             <Link to={`/events/${event.id}`}>

@@ -364,6 +364,13 @@ export default function CreateEvent() {
       //
       // `source` is NOT NULL on prod (scraper vs platform discriminator) — every
       // self-serve event is 'platform'.
+      // Auto-generate slug from title
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 80);
+
       const eventPayload: Record<string, unknown> = {
         creator_id: user.id,
         source: "platform",
@@ -381,6 +388,7 @@ export default function CreateEvent() {
         status: publish ? "pending_approval" : "draft",
         cover_image_url: coverImageUrl || null,
         image_url: coverImageUrl || null,
+        slug,
       };
 
       const { data: eventData, error: eventError } = await supabase
