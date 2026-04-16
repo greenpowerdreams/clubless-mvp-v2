@@ -4,8 +4,8 @@
     {
       "name": "dev",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd /Users/drewgreen/clawbot/clublesscollective && npm run dev"],
-      "port": 8080
+      "runtimeArgs": ["-c", "cd /Users/drewgreen/clawbot/clublesscollective && npx vite"],
+      "autoPort": true
     }
   ]
 }

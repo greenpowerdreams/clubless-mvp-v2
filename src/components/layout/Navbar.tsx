@@ -7,6 +7,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { NotificationBell } from "./NotificationBell";
 
 const navLinks = [
+  { name: "Discover", path: "/discover" },
   { name: "Events", path: "/events" },
   { name: "How It Works", path: "/how-it-works" },
   { name: "Bar Service", path: "/bar-service" },

@@ -43,6 +43,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const WhatIsClubless = lazy(() => import("./pages/WhatIsClubless"));
 const CreateEvent = lazy(() => import("./pages/CreateEvent"));
+const Discover = lazy(() => import("./pages/Discover"));
 
 // Production: unified dashboard + profiles
 const Dashboard = lazy(() => import("./features/dashboard/Dashboard"));
@@ -97,6 +98,7 @@ const App = () => (
             <Routes>
               {/* Public */}
               <Route path="/" element={<Index />} />
+              <Route path="/discover" element={<Discover />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/e/:slug" element={<EventDetail />} />
