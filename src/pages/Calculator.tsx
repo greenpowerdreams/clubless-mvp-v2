@@ -1636,7 +1636,7 @@ export function CalculatorContent({ defaultModel }: { defaultModel?: string } = 
                     <p className="font-semibold text-green-400">Your event is ready.</p>
                     <p className="text-sm text-muted-foreground mb-3">List it on Clubless. Takes 10 minutes.</p>
                     <Button asChild>
-                      <Link to="/submit">Submit This Event →</Link>
+                      <Link to="/dashboard/events/new">Submit This Event →</Link>
                     </Button>
                   </div>
                 );
@@ -1648,7 +1648,7 @@ export function CalculatorContent({ defaultModel }: { defaultModel?: string } = 
                       asChild
                       variant="outline"
                     >
-                      <Link to="/submit">Talk to an Advisor →</Link>
+                      <Link to="/dashboard/events/new">Talk to an Advisor →</Link>
                     </Button>
                   </div>
                 );
@@ -1657,7 +1657,7 @@ export function CalculatorContent({ defaultModel }: { defaultModel?: string } = 
                     <p className="font-semibold text-red-400">Let's fix this plan.</p>
                     <p className="text-sm text-muted-foreground mb-3">Adjust ticket price, venue cost, or attendance to improve your score.</p>
                     <Button asChild variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10">
-                      <Link to="/submit">Talk to an Event Advisor →</Link>
+                      <Link to="/dashboard/events/new">Talk to an Event Advisor →</Link>
                     </Button>
                   </div>
                 );
@@ -1666,7 +1666,7 @@ export function CalculatorContent({ defaultModel }: { defaultModel?: string } = 
               {/* Hidden data passthrough for submit page */}
               <Button variant="default" size="lg" className="w-full sr-only" asChild>
                 <Link
-                  to="/submit"
+                  to="/dashboard/events/new"
                   state={{
                     calculatorData: {
                       attendance,

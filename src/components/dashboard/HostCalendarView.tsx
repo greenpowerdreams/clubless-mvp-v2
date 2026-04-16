@@ -112,7 +112,7 @@ export function HostCalendarView({ userId }: HostCalendarViewProps) {
           Ready to plan your first event?
         </p>
         <Button variant="default" asChild>
-          <Link to="/submit">
+          <Link to="/dashboard/events/new">
             <Plus className="w-4 h-4 mr-2" />
             Plan an Event
           </Link>
@@ -160,7 +160,7 @@ export function HostCalendarView({ userId }: HostCalendarViewProps) {
                   {format(selectedDate, "EEEE, MMMM d, yyyy")}
                 </h3>
                 <Button variant="outline" size="sm" asChild>
-                  <Link to={`/submit${selectedDateStr ? `?date=${selectedDateStr}` : ""}`}>
+                  <Link to={`/dashboard/events/new${selectedDateStr ? `?date=${selectedDateStr}` : ""}`}>
                     <Plus className="w-3 h-3 mr-1" />
                     Plan event
                   </Link>
@@ -171,7 +171,7 @@ export function HostCalendarView({ userId }: HostCalendarViewProps) {
                 <div className="text-muted-foreground text-sm py-6 text-center border border-dashed border-border rounded-xl">
                   No events on this date.{" "}
                   <Link
-                    to={`/submit?date=${selectedDateStr}`}
+                    to={`/dashboard/events/new?date=${selectedDateStr}`}
                     className="text-primary underline underline-offset-2"
                   >
                     Plan one

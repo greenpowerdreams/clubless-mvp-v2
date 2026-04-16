@@ -171,7 +171,7 @@ export default function Index() {
               return (
                 <Link
                   key={type.id}
-                  to={`/submit?type=${type.id}`}
+                  to={`/dashboard/events/new?type=${type.id}`}
                   className="group flex-shrink-0 w-52 md:w-auto snap-start"
                 >
                   <div
@@ -440,7 +440,7 @@ export default function Index() {
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
-                <Link to="/submit">Submit Your Event</Link>
+                <Link to="/dashboard/events/new">Start an Event</Link>
               </Button>
             </div>
           </div>

@@ -245,7 +245,7 @@ export default function HowItWorks() {
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link to="/submit">Submit Event Idea</Link>
+                <Link to="/dashboard/events/new">Start an Event</Link>
               </Button>
             </div>
           </div>

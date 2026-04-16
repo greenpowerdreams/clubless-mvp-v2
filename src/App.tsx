@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 const Index = lazy(() => import("./pages/Index"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Calculator = lazy(() => import("./pages/Calculator"));
-const SubmitEvent = lazy(() => import("./pages/SubmitEvent"));
+// SubmitEvent deleted — /submit now redirects to /dashboard/events/new
 const ProposalStatus = lazy(() => import("./pages/ProposalStatus"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminAuth = lazy(() => import("./pages/AdminAuth"));
@@ -104,7 +104,7 @@ const App = () => (
               <Route path="/calculator" element={<Calculator />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/faq" element={<FAQ />} />
-              <Route path="/submit" element={<SubmitEvent />} />
+              <Route path="/submit" element={<Navigate to="/dashboard/events/new" replace />} />
               <Route path="/status" element={<ProposalStatus />} />
               <Route path="/whos-playing" element={<Navigate to="/events" replace />} />
               <Route path="/creators" element={<CreatorDirectory />} />

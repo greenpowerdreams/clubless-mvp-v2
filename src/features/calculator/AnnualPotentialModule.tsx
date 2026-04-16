@@ -143,7 +143,7 @@ export function AnnualPotentialModule({ result, eventType, isNightlife }: Annual
 
         {/* CTA */}
         <a
-          href="/submit"
+          href="/dashboard/events/new"
           className="flex items-center justify-center gap-2 w-full rounded-lg border border-primary/40 bg-primary/5 py-2.5 px-4 text-sm font-medium text-primary hover:bg-primary/15 hover:border-primary transition-all"
         >
           Ready to build this? Submit your first event

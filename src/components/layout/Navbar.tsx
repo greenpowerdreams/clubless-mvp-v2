@@ -100,7 +100,7 @@ export function Navbar() {
                   <Link to="/login">Log in</Link>
                 </Button>
                 <Button variant="default" size="sm" asChild>
-                  <Link to="/submit">
+                  <Link to="/dashboard/events/new">
                     Start an Event
                     <ChevronRight className="w-4 h-4" />
                   </Link>
@@ -112,7 +112,7 @@ export function Navbar() {
           {/* Mobile Primary CTA */}
           {!isLoggedIn && (
             <Link
-              to="/submit"
+              to="/dashboard/events/new"
               className="md:hidden text-primary text-sm font-medium mr-2"
             >
               Start an Event
@@ -163,7 +163,7 @@ export function Navbar() {
                       </Link>
                     </Button>
                     <Button variant="default" asChild>
-                      <Link to="/submit" onClick={() => setIsOpen(false)}>
+                      <Link to="/dashboard/events/new" onClick={() => setIsOpen(false)}>
                         Start an Event
                       </Link>
                     </Button>

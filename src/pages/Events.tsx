@@ -305,8 +305,8 @@ export default function Events() {
                                     {event.genre && (
                                       <Badge variant="secondary" className="text-xs">{event.genre}</Badge>
                                     )}
-                                    {event.price && (
-                                      <Badge className="text-xs bg-primary/20 text-primary border-0">{event.price}</Badge>
+                                    {event.price && /^\$\d/.test(event.price) && (
+                                      <Badge className="text-xs bg-primary/20 text-primary border-0">From {event.price}</Badge>
                                     )}
                                   </div>
                                 </div>
@@ -355,7 +355,7 @@ export default function Events() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button asChild>
-                    <Link to="/submit">
+                    <Link to="/dashboard/events/new">
                       Submit Your Event
                       <ArrowRight className="w-4 h-4" />
                     </Link>
@@ -446,7 +446,7 @@ export default function Events() {
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link to="/submit">Submit Event Idea</Link>
+                <Link to="/dashboard/events/new">Submit Event Idea</Link>
               </Button>
             </div>
           </div>

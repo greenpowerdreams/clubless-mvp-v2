@@ -11,7 +11,7 @@ const footerLinks = {
     { name: "Profit Calculator", path: "/calculator" },
   ],
   creators: [
-    { name: "Become a Host", path: "/submit" },
+    { name: "Become a Host", path: "/dashboard/events/new" },
     { name: "Creator Dashboard", path: "/dashboard" },
     { name: "Check Status", path: "/status" },
   ],

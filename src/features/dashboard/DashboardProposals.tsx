@@ -35,7 +35,7 @@ export function DashboardProposals({ userId }: DashboardProposalsProps) {
             <Link to="/calculator">Start with Calculator</Link>
           </Button>
           <Button variant="default" asChild>
-            <Link to="/submit">Submit Event</Link>
+            <Link to="/dashboard/events/new">Submit Event</Link>
           </Button>
         </div>
       </div>
@@ -50,7 +50,7 @@ export function DashboardProposals({ userId }: DashboardProposalsProps) {
           Your Proposals
         </h2>
         <Button variant="default" size="sm" asChild>
-          <Link to="/submit">Submit New</Link>
+          <Link to="/dashboard/events/new">Submit New</Link>
         </Button>
       </div>
 

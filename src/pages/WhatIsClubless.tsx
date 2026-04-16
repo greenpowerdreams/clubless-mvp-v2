@@ -102,7 +102,7 @@ export default function WhatIsClubless() {
 
         <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg">
-            <Link to="/submit">
+            <Link to="/dashboard/events/new">
               Start Your Event <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
           </Button>

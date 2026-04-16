@@ -91,7 +91,7 @@ function FilmstripCTA({ city, onBack }: { city?: string; onBack?: () => void }) 
             Club nights, weddings, house parties. Your first Clubless event starts here.
           </p>
           <Button asChild>
-            <Link to="/submit">
+            <Link to="/dashboard/events/new">
               Become a Host
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
